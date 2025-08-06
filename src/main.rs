@@ -4,37 +4,30 @@ mod settings;
 use cli::*;
 use clap::Parser;
 use std::process;
-use settings::{get_setting, SettingsError};
+use settings::*;
 
 fn main() {
     let cli = Cli::parse();
 
     match cli.command {
+        Commands::Attach { session } => {
+            let session = session.unwrap_or_else(|| {
+                "a".to_string()
+            });
+        },
         Commands::Backup { server } => {
             let server = server.unwrap_or_else(|| {
-                match get_setting("default") {
-                    Ok(value) => {
-                        if value.len() == 0 {
-                            println!(".default file is empty!");
-                            process::exit(1);
-                        }
-
-                        value
-                    },
-                    Err(SettingsError::Io(e)) => {
-                        eprintln!("IO error: {}", e);
-                        process::exit(1);
-                    },
-                    Err(SettingsError::HomeDirFailure) => {
-                        eprintln!("Failed to get home directory");
+                match get_default() {
+                    Ok(default) => default,
+                    Err(e) => {
+                        println!("{}", e);
                         process::exit(1);
                     },
                 }
             });
 
-            println!("Ok");
+            println!("{}", server);
         },
-
         _ => { println!("ok"); },
     }
 }
