@@ -1,32 +1,38 @@
 mod cli;
 mod settings;
+mod tmux;
 
 use cli::*;
 use clap::Parser;
-use std::process;
 use settings::*;
+use std::process;
+use tmux::AttachError;
 
 fn main() {
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Attach { session } => {
-            let session = session.unwrap_or_else(|| {
-                "a".to_string()
-            });
+            let session = session.unwrap_or_else(|| get_default_or_exit!());
+
+            let Err(e) = tmux::attach(&session) else {
+                return;
+            };
+
+            match e {
+                AttachError::Io(e) => eprintln!("IO error: {}", e),
+                AttachError::SessionInexistent => eprintln!("Session {} does not exist", session),
+                AttachError::TmuxFailure(e) => eprintln!("Tmux failure: {}", e),
+            };
+
+            process::exit(1);
         },
         Commands::Backup { server } => {
-            let server = server.unwrap_or_else(|| {
-                match get_default() {
-                    Ok(default) => default,
-                    Err(e) => {
-                        println!("{}", e);
-                        process::exit(1);
-                    },
-                }
-            });
+            let server = server.unwrap_or_else(|| get_default_or_exit!());
 
-            println!("{}", server);
+            println!("Backing up {}", server);
+
+            
         },
         _ => { println!("ok"); },
     }
