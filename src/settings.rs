@@ -1,6 +1,19 @@
 use dirs::home_dir;
 use std::{fs, io};
 
+#[macro_export]
+macro_rules! get_default_or_exit {
+    () => {
+        match get_default() {
+            Ok(default) => default,
+            Err(e) => {
+                eprintln!("{}", e);
+                process::exit(1);
+            },
+        }
+    };
+}
+
 pub enum SettingsError {
     Io(io::Error),
     HomeDirFailure,
@@ -30,7 +43,7 @@ pub fn get_default() -> Result<String, String> {
                 return Err(".default file is empty!".to_string());
             }
 
-            Ok(value)
+            Ok(value.trim_end().to_string())
         },
         Err(SettingsError::Io(e)) => Err(format!("IO error: {}", e)),
         Err(SettingsError::HomeDirFailure) => Err("Failed to get home dir".to_string()),
