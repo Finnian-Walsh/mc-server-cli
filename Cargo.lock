@@ -328,6 +328,7 @@ dependencies = [
  "chrono",
  "clap",
  "dirs",
+ "once_cell",
 ]
 
 [[package]]
