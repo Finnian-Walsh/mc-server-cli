@@ -1,17 +1,29 @@
-use dirs::home_dir;
-use std::{fs, io, path::{Path, PathBuf}};
+use chrono::Local;
+use crate::config;
+use crate::home;
+use std::{
+    fmt,
+    fs,
+    io,
+    path::{Path, PathBuf},
+    result
+};
 
 pub fn copy_dir(src: &Path, dst: &Path) -> io::Result<()> {
-    for entry in fs::read_dir(src) {
+    if true {
+        return Ok(());
+    }
+
+    for entry in fs::read_dir(src)? {
         let entry = entry?;
         let file_type = entry.file_type()?;
         let src_path = entry.path();
-        let dst_path = dst.join(src_path);
+        let dst_path = dst.join(&src_path);
 
         if file_type.is_dir() {
-            copy_dir(&src_path, &dst_path);
+            copy_dir(&src_path, &dst_path)?;
         } else if file_type.is_file() {
-            fs::copy(&src_path, &dst_path);
+            fs::copy(&src_path, &dst_path)?;
         }
 
         // skip symlinks
@@ -20,22 +32,83 @@ pub fn copy_dir(src: &Path, dst: &Path) -> io::Result<()> {
     Ok(())
 }
 
-pub fn backup(server: &str) -> Result<(), io::Error> {
-    let Ok(mut path) = home_dir() else {
-        
-    };
+#[derive(Debug)]
+pub enum Error {
+    BackupDirInexistent(PathBuf),
+    BackupFailureCleanedUp(io::Error),
+    BackupFailureUncleaned {
+        backup_err: io::Error,
+        cleanup_err: io::Error,
+    },
+    Io(io::Error),
+    ServerDirInexistent(PathBuf),
+}
 
-    path.push("Servers");
-    path.push(server);
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::BackupDirInexistent(backup_dir) => write!(f, "Backup directory {} does not exist", backup_dir.to_string_lossy()),
+            Error::BackupFailureCleanedUp(err) => write!(f, "Backup failed with error: {}\nClean up was successful", err),
+            Error::BackupFailureUncleaned { backup_err, cleanup_err } => write!(f, "Backup failed with error: {}\nClean up failed with error: {}", backup_err, cleanup_err),
+            Error::Io(err) => write!(f, "{}", err),
+            Error::ServerDirInexistent(server_dir) => write!(f, "Server directory {} does not exist", server_dir.to_string_lossy()),
+        }
+    }
+}
 
-    let mut src_path = path.clone();
-    src_path.push("Server");
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Self {
+        Error::Io(err)
+    }
+}
 
-    let mut dst_path = path;
-    dst_path.push("Backups");
-    dst_path.push("
+impl std::error::Error for Error {}
 
-    return Err(io::Error::new(io::ErrorKind::NotFound, format!("Directory {} does not exist")));
+pub type Result<T> = result::Result<T, Error>;
+
+pub fn backup(server: &str) -> Result<()> {
+    let server_root_dir = home::get()
+        .join(config::get("servers")?)
+        .join(server);
+
+    let src_path = server_root_dir.join("Server");
+
+    if !src_path.is_dir() {
+        return Err(Error::ServerDirInexistent(src_path));
+    }
+
+    let backup_dir = server_root_dir.join("Backups");
+
+    if !backup_dir.is_dir() {
+        return Err(Error::BackupDirInexistent(backup_dir));
+    }
+
+    let dst_path = backup_dir.join(Local::now().format("%Y-%m-%d-%H-%M-%S").to_string());
+
+    println!("{}", dst_path.display());
+    
+    if let Err(backup_err) = copy_dir(&src_path, &dst_path) {
+        let Err(cleanup_err) = fs::remove_dir_all(&dst_path) else {
+            return Err(Error::BackupFailureCleanedUp(backup_err));
+        };
+
+
+        return Err(Error::BackupFailureUncleaned {backup_err, cleanup_err});
+    }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn copy_directory() -> Result<(), String> {
+        if let Err(e) = copy_dir(Path::new(""), Path::new("")) {
+            return Err(e.to_string());
+        }
+
+        Ok(())
+    }
 }
