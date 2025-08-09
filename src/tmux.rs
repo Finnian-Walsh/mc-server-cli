@@ -1,4 +1,4 @@
-use std::{io, process::Command};
+use std::{fmt, io, process::Command};
 
 fn get_sessions() -> io::Result<Vec<String>> {
     let output = Command::new("tmux")
@@ -19,21 +19,34 @@ fn get_sessions() -> io::Result<Vec<String>> {
     )
 }
 
+#[derive(Debug)]
 pub enum AttachError {
     Io(io::Error),
-    SessionInexistent,
+    SessionInexistent(String),
     TmuxFailure(String),
 }
 
 impl From<io::Error> for AttachError {
-    fn from(e: io::Error) -> Self {
-        AttachError::Io(e)
+    fn from(err: io::Error) -> Self {
+        AttachError::Io(err)
     }
 }
 
+impl fmt::Display for AttachError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AttachError::Io(err) => write!(f, "IO error: {}", err),
+            AttachError::SessionInexistent(session) => write!(f, "Session {} does not exist", session),
+            AttachError::TmuxFailure(msg) => write!(f, "Tmux failure: {}", msg),
+        }
+    }   
+}
+
+impl std::error::Error for AttachError {}
+
 pub fn attach(session: &str) -> Result<(), AttachError> {
     if !get_sessions()?.iter().any(|s| s == session) {
-        return Err(AttachError::SessionInexistent);
+        return Err(AttachError::SessionInexistent(session.to_string()));
     }
 
     let mut child = Command::new("tmux")
@@ -42,12 +55,37 @@ pub fn attach(session: &str) -> Result<(), AttachError> {
         .arg(&session)
         .spawn()?;
 
-    let output = child.wait()?;
+    let status = child.wait()?;
             
-    if output.success() {
+    if status.success() {
         Ok(())
     } else {
-        Err(AttachError::TmuxFailure("Attach failed".to_string()))
+        Err(AttachError::TmuxFailure("Failed to attach to session".to_string()))
+    }
+}
+
+pub fn new(name: Option<&str>, process_command: Option<&str>) -> io::Result<()> {
+    let mut command = Command::new("tmux");
+    command.arg("new");
+
+    if let Some(name) = name {
+        command.arg("-s")
+               .arg(name);
+    }
+
+    if let Some(process_command) = process_command {
+        command.arg("bash")
+               .arg("-c")
+               .arg(process_command);
+    }
+    
+    let mut child = command.spawn()?;
+    let status = child.wait()?;
+
+    if status.success() {
+        Ok(())
+    } else {
+        Err(io::Error::new(io::ErrorKind::Other, "Command failed"))
     }
 }
 
