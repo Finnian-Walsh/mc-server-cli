@@ -4,10 +4,10 @@ use std::{
     collections::HashMap,
     fs,
     io::{Error, ErrorKind, Result},
-    sync::Mutex
+    sync::Mutex,
 };
 
-static CONFIG: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| Mutex::new(HashMap::new()) );
+static CONFIG: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 pub fn get_raw<S: Into<String>>(configuration: S) -> Result<String> {
     let mut config_map = CONFIG.lock().unwrap();
@@ -15,7 +15,7 @@ pub fn get_raw<S: Into<String>>(configuration: S) -> Result<String> {
     let configuration: String = configuration.into();
 
     if let Some(value) = config_map.get(&configuration) {
-        return Ok(value.clone())
+        return Ok(value.clone());
     }
 
     let path = home::get()
@@ -50,4 +50,3 @@ pub fn unwrap_or_default(server: Option<String>) -> Result<String> {
 
     Ok(get_default()?)
 }
-

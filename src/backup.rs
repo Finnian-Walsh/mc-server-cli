@@ -1,12 +1,10 @@
-use chrono::Local;
 use crate::config;
 use crate::home;
+use chrono::Local;
 use std::{
-    fmt,
-    fs,
-    io,
+    fmt, fs, io,
     path::{Path, PathBuf},
-    result
+    result,
 };
 
 pub fn copy_dir(src: &Path, dst: &Path) -> io::Result<()> {
@@ -47,11 +45,30 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::BackupDirInexistent(backup_dir) => write!(f, "Backup directory {} does not exist", backup_dir.to_string_lossy()),
-            Error::BackupFailureCleanedUp(err) => write!(f, "Backup failed with error: {}\nClean up was successful", err),
-            Error::BackupFailureUncleaned { backup_err, cleanup_err } => write!(f, "Backup failed with error: {}\nClean up failed with error: {}", backup_err, cleanup_err),
+            Error::BackupDirInexistent(backup_dir) => write!(
+                f,
+                "Backup directory {} does not exist",
+                backup_dir.to_string_lossy()
+            ),
+            Error::BackupFailureCleanedUp(err) => write!(
+                f,
+                "Backup failed with error: {}\nClean up was successful",
+                err
+            ),
+            Error::BackupFailureUncleaned {
+                backup_err,
+                cleanup_err,
+            } => write!(
+                f,
+                "Backup failed with error: {}\nClean up failed with error: {}",
+                backup_err, cleanup_err
+            ),
             Error::Io(err) => write!(f, "{}", err),
-            Error::ServerDirInexistent(server_dir) => write!(f, "Server directory {} does not exist", server_dir.to_string_lossy()),
+            Error::ServerDirInexistent(server_dir) => write!(
+                f,
+                "Server directory {} does not exist",
+                server_dir.to_string_lossy()
+            ),
         }
     }
 }
@@ -67,9 +84,7 @@ impl std::error::Error for Error {}
 pub type Result<T> = result::Result<T, Error>;
 
 pub fn backup(server: &str) -> Result<()> {
-    let server_root_dir = home::get()
-        .join(config::get("servers")?)
-        .join(server);
+    let server_root_dir = home::get().join(config::get("servers")?).join(server);
 
     let src_path = server_root_dir.join("Server");
 
@@ -86,14 +101,16 @@ pub fn backup(server: &str) -> Result<()> {
     let dst_path = backup_dir.join(Local::now().format("%Y-%m-%d-%H-%M-%S").to_string());
 
     println!("{}", dst_path.display());
-    
+
     if let Err(backup_err) = copy_dir(&src_path, &dst_path) {
         let Err(cleanup_err) = fs::remove_dir_all(&dst_path) else {
             return Err(Error::BackupFailureCleanedUp(backup_err));
         };
 
-
-        return Err(Error::BackupFailureUncleaned {backup_err, cleanup_err});
+        return Err(Error::BackupFailureUncleaned {
+            backup_err,
+            cleanup_err,
+        });
     }
 
     Ok(())

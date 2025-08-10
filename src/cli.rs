@@ -60,4 +60,3 @@ pub enum DefaultCommands {
         server: String,
     },
 }
-

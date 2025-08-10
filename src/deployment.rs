@@ -1,11 +1,9 @@
 use crate::config;
 use crate::home;
 use std::{
-    fmt,
-    fs,
-    io,
+    fmt, fs, io,
     path::{Path, PathBuf},
-    result
+    result,
 };
 
 #[derive(Debug)]
@@ -26,9 +24,19 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::Io(err) => write!(f, "{}", err),
-            Error::NoServerDirectory(dir) => write!(f, "Server directory {} does not exist", dir.to_string_lossy()),
-            Error::NoJarfile(jarfile) => write!(f, "Jar file {} does not exist", jarfile.to_string_lossy()),
-            Error::NoJarfileTxt(jarfile_txt) => write!(f, "{} does not exist, and it is needed to specify the jar path", jarfile_txt.to_string_lossy()),
+            Error::NoServerDirectory(dir) => write!(
+                f,
+                "Server directory {} does not exist",
+                dir.to_string_lossy()
+            ),
+            Error::NoJarfile(jarfile) => {
+                write!(f, "Jar file {} does not exist", jarfile.to_string_lossy())
+            }
+            Error::NoJarfileTxt(jarfile_txt) => write!(
+                f,
+                "{} does not exist, and it is needed to specify the jar path",
+                jarfile_txt.to_string_lossy()
+            ),
         }
     }
 }
@@ -57,9 +65,8 @@ fn get_server_jar_path(server_dir: &Path) -> Result<PathBuf> {
         return Err(Error::NoJarfileTxt(jarfile_txt));
     }
 
-    let jarfile_path = server_dir
-        .join(fs::read_to_string(jarfile_txt)?.trim_end());
-    
+    let jarfile_path = server_dir.join(fs::read_to_string(jarfile_txt)?.trim_end());
+
     if !jarfile_path.is_file() {
         return Err(Error::NoJarfile(jarfile_path));
     }
@@ -70,10 +77,9 @@ fn get_server_jar_path(server_dir: &Path) -> Result<PathBuf> {
 pub fn get_command(server: &str) -> Result<String> {
     let server_dir = get_server_dir(server)?;
     Ok(format!(
-            "cd {} && java -jar {} {}",
-            server_dir.to_string_lossy(),
-            config::get("arguments")?,
-            get_server_jar_path(&server_dir)?.to_string_lossy()
+        "cd {} && java -jar {} {}",
+        server_dir.to_string_lossy(),
+        config::get("arguments")?,
+        get_server_jar_path(&server_dir)?.to_string_lossy()
     ))
 }
-

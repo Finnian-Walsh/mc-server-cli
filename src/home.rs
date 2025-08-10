@@ -1,6 +1,10 @@
 use dirs::home_dir;
 use once_cell::sync::OnceCell;
-use std::{fmt, path::{Path, PathBuf}, result};
+use std::{
+    fmt,
+    path::{Path, PathBuf},
+    result,
+};
 
 #[derive(Debug)]
 pub enum Error {
@@ -29,7 +33,7 @@ pub fn init() -> Result<()> {
     };
 
     if let Err(_) = HOME_DIR.set(home) {
-            return Err(Error::HomeDirAlreadySet);
+        return Err(Error::HomeDirAlreadySet);
     }
 
     Ok(())
@@ -38,5 +42,3 @@ pub fn init() -> Result<()> {
 pub fn get() -> &'static Path {
     HOME_DIR.get().unwrap()
 }
-
-

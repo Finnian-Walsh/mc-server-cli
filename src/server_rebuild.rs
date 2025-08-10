@@ -36,9 +36,7 @@ impl std::error::Error for Error {}
 pub type Result<T> = result::Result<T, Error>;
 
 pub fn rebuild() -> Result<()> {
-    let mut child = Command::new("cargo")
-        .arg("build")
-        .spawn()?;
+    let mut child = Command::new("cargo").arg("build").spawn()?;
 
     let status = child.wait()?;
 
@@ -59,10 +57,7 @@ pub fn rebuild() -> Result<()> {
 
     fs::copy(
         "target/release/server",
-        home::get()
-                  .join(".local")
-                  .join("bin")
-                  .join("server")
+        home::get().join(".local").join("bin").join("server"),
     )?;
 
     Ok(())
