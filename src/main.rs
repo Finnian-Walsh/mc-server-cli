@@ -23,12 +23,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Attempting to back up {}", server);
             backup::backup(&server)?;
         }
+        Commands::Default { action } => match action {
+            DefaultCommands::Get => println!("{}", config::get_default()?),
+            DefaultCommands::Set { server } => println!("Setting {}...", server),
+        },
         Commands::Deploy { server } => {
             let server = unwrap_or_default(server)?;
             tmux::new(Some(&server), Some(&deployment::get_command(&server)?))?;
         }
-        _ => {
-            println!("not implemented yet");
+        Commands::Execute { server, command } => {
+            let server = unwrap_or_default(server)?;
+            tmux::execute(server, command)?;
+        }
+        Commands::List { active, inactive } => {
+            if active {
+                if inactive {
+                    eprintln!("Cannot output");
+                    return Ok(());
+                }
+
+                println!("{}", tmux::get_active_servers()?.join("\n"));
+            } else if inactive {
+                println!("{}", tmux::get_inactive_servers()?.join("\n"));
+            } else {
+                println!("{}", tmux::get_servers()?.join("\n"));
+            }
+        }
+        Commands::Stop { server } => {
+            let server = unwrap_or_default(server)?;
+            tmux::execute(server, "stop")?;
         }
     };
 
