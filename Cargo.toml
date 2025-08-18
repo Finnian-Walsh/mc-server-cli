@@ -1,7 +1,11 @@
 [package]
-name = "server"
+name = "mc_server"
 version = "0.1.0"
 edition = "2024"
+
+[[bin]]
+name = "server"
+path = "src/main.rs"
 
 [dependencies]
 chrono = "0.4"
