@@ -1,5 +1,4 @@
-use crate::config;
-use crate::home;
+use crate::{config, home};
 use std::{
     fmt, fs, io,
     path::{Path, PathBuf},
@@ -12,12 +11,6 @@ pub enum Error {
     NoServerDirectory(PathBuf),
     NoJarfile(PathBuf),
     NoJarfileTxt(PathBuf),
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Error::Io(err)
-    }
 }
 
 impl fmt::Display for Error {
@@ -38,6 +31,12 @@ impl fmt::Display for Error {
                 jarfile_txt.to_string_lossy()
             ),
         }
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Self {
+        Error::Io(err)
     }
 }
 

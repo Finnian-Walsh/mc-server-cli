@@ -1,16 +1,20 @@
 use crate::home;
-use once_cell::sync::Lazy;
 use std::{
     collections::HashMap,
     fs,
     io::{Error, ErrorKind, Result},
-    sync::Mutex,
+    sync::{Mutex, OnceLock},
 };
 
-static CONFIG: Lazy<Mutex<HashMap<String, String>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+pub type ConfigType = HashMap<String, String>;
+
+static CONFIG: OnceLock<Mutex<ConfigType>> = OnceLock::new();
 
 pub fn get_raw<S: Into<String>>(configuration: S) -> Result<String> {
-    let mut config_map = CONFIG.lock().unwrap();
+    let mut config_map = CONFIG
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .map_err(|err| Error::new(ErrorKind::Other, format!("Config poisoned: {}", err)))?;
 
     let configuration: String = configuration.into();
 
@@ -24,13 +28,14 @@ pub fn get_raw<S: Into<String>>(configuration: S) -> Result<String> {
         .join(&configuration);
 
     let value = fs::read_to_string(&path)?;
-
-    config_map.insert(configuration, value.clone());
+    config_map.insert(configuration.to_string(), value.clone());
     Ok(value)
 }
 
 pub fn get<S: Into<String>>(configuration: S) -> Result<String> {
-    Ok(get_raw(configuration)?.trim_end().to_string())
+    let mut value = get_raw(configuration)?;
+    value.truncate(value.trim_end().len());
+    Ok(value)
 }
 
 pub fn get_default() -> Result<String> {
@@ -44,9 +49,5 @@ pub fn get_default() -> Result<String> {
 }
 
 pub fn unwrap_or_default(server: Option<String>) -> Result<String> {
-    if let Some(server) = server {
-        return Ok(server);
-    }
-
-    Ok(get_default()?)
+    server.map_or_else(|| get_default(), |val| Ok(val))
 }
