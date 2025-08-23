@@ -1,21 +1,21 @@
-
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(name = "serverup", version, about = "Server binary manager")]
 pub struct Cli {
-    #[subcommand()]
-    command: Commands,
+    #[command(subcommand)]
+    pub command: Commands,
 }
 
 #[derive(Subcommand)]
 pub enum Commands {
     #[command(name = "self")]
     SelfCmd {
-        #[subcommand()]
+        #[command(subcommand)]
         command: SelfCommands,
     },
 
+    #[command()]
     Update {
         #[arg(short, long)]
         local: bool,
@@ -24,9 +24,9 @@ pub enum Commands {
 
 #[derive(Subcommand)]
 pub enum SelfCommands {
+    #[command()]
     Update {
-        #[arg(short, bool)]
+        #[arg(short, long)]
         local: bool,
     },
 }
-
