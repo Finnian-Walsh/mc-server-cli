@@ -14,7 +14,6 @@ static GITHUB_REPO_URL: &str = formatcp!("https://github.com/{}/{}", REPO_OWNER,
 pub enum Error {
     BuildFailure,
     Git2(git2::Error),
-    Home(home::Error),
     Io(io::Error),
 }
 
@@ -23,7 +22,6 @@ impl fmt::Display for Error {
         match self {
             Error::BuildFailure => write!(f, "cargo build failed"),
             Error::Git2(err) => write!(f, "{}", err),
-            Error::Home(err) => write!(f, "{}", err),
             Error::Io(e) => write!(f, "{}", e),
         }
     }
@@ -32,12 +30,6 @@ impl fmt::Display for Error {
 impl From<git2::Error> for Error {
     fn from(err: git2::Error) -> Self {
         Error::Git2(err)
-    }
-}
-
-impl From<home::Error> for Error {
-    fn from(err: home::Error) -> Self {
-        Error::Home(err)
     }
 }
 
@@ -89,7 +81,7 @@ pub fn local_update() -> Result<()> {
 
     fs::copy(
         executables::get(Executable::Server, "release"),
-        home::get().join(".local").join("bin").join("server"),
+        home::get()?.join(".local").join("bin").join("server"),
     )?;
 
     Ok(())

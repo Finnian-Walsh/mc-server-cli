@@ -45,7 +45,7 @@ impl std::error::Error for Error {}
 pub type Result<T> = result::Result<T, Error>;
 
 fn get_server_dir(server: &str) -> Result<PathBuf> {
-    let server_dir = home::get()
+    let server_dir = home::get()?
         .join(config::get("servers")?)
         .join(server)
         .join("Server");

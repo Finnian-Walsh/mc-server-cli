@@ -1,44 +1,25 @@
 use dirs::home_dir;
-use once_cell::sync::OnceCell;
 use std::{
-    fmt,
+    io::{Error, ErrorKind, Result},
     path::{Path, PathBuf},
-    result,
+    sync::OnceLock,
 };
 
-#[derive(Debug)]
-pub enum Error {
-    HomeDirFailure,
-    HomeDirAlreadySet,
-}
+static HOME_DIR: OnceLock<PathBuf> = OnceLock::new();
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Error::HomeDirFailure => write!(f, "Failed to get home directory"),
-            Error::HomeDirAlreadySet => write!(f, "HOME_DIR variable has already been set"),
+pub fn get() -> Result<&'static Path> {
+    // use get_or_try_init
+
+    if let Some(home) = HOME_DIR.get() {
+        return Ok(home.as_path());
+    }
+
+    match home_dir() {
+        Some(home) => {
+            HOME_DIR.set(home).unwrap();
+            Ok(HOME_DIR.get().unwrap())
         }
+        None => Err(Error::new(ErrorKind::NotFound, "Failed to get home directory")),
     }
 }
 
-impl std::error::Error for Error {}
-
-pub type Result<T> = result::Result<T, Error>;
-
-static HOME_DIR: OnceCell<PathBuf> = OnceCell::new();
-
-pub fn init() -> Result<()> {
-    let Some(home) = home_dir() else {
-        return Err(Error::HomeDirFailure);
-    };
-
-    if let Err(_) = HOME_DIR.set(home) {
-        return Err(Error::HomeDirAlreadySet);
-    }
-
-    Ok(())
-}
-
-pub fn get() -> &'static Path {
-    HOME_DIR.get().unwrap()
-}

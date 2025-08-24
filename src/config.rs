@@ -22,7 +22,7 @@ pub fn get_raw<S: Into<String>>(configuration: S) -> Result<String> {
         return Ok(value.clone());
     }
 
-    let path = home::get()
+    let path = home::get()?
         .join(".config")
         .join("server")
         .join(&configuration);

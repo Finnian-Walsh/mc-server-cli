@@ -84,7 +84,7 @@ impl std::error::Error for Error {}
 pub type Result<T> = result::Result<T, Error>;
 
 pub fn backup(server: &str) -> Result<()> {
-    let server_root_dir = home::get().join(config::get("servers")?).join(server);
+    let server_root_dir = home::get()?.join(config::get("servers")?).join(server);
 
     let src_path = server_root_dir.join("Server");
 

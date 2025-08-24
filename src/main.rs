@@ -11,7 +11,6 @@ use config::unwrap_or_default;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    home::init()?;
 
     match cli.command {
         Commands::Attach { session } => {

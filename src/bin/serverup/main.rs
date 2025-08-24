@@ -3,10 +3,8 @@ mod updater;
 
 use clap::Parser;
 use cli::*;
-use server::home;
 
 fn main() -> updater::Result<()> {
-    home::init()?;
     let cli = Cli::parse();
 
     match cli.command {
