@@ -1,10 +1,15 @@
 use const_format::formatcp;
 use git2::{self, Repository};
 use server::{
+    config,
     executables::{self, Executable},
     home,
 };
-use std::{env, fmt, fs, io, path, process::Command, result};
+use std::{
+    env, fmt, io, path,
+    process::{Command, Stdio},
+    result,
+};
 
 static REPO_OWNER: &str = "Finnian-Walsh";
 static REPO_NAME: &str = "mc-server-cli";
@@ -44,28 +49,30 @@ impl std::error::Error for Error {}
 pub type Result<T> = result::Result<T, Error>;
 
 macro_rules! build_binaries {
-    ( $func:expr, $( $arg:expr ),* ) => {
+    ( $func:expr, $( $arg:expr ),* $(,)? ) => {
         {
             let mut command = Command::new("cargo");
             command.arg("build");
 
             $func(&mut command);
             $(
-                command.args(["--bin", $arg]);
+                command.arg("--bin").arg($arg);
             )*
 
             command.status()
         }
     };
+
+    ( $( $arg:expr ),* $(,)? ) => {
+        build_binaries!(|_: &mut Command| {}, $( $arg ),*)
+    };
 }
 
 pub fn local_update() -> Result<()> {
-    println!("building debug...");
-    if !build_binaries!(|_| {}, "server")?.success() {
+    if !build_binaries!("server")?.success() {
         return Err(Error::BuildFailure);
     }
 
-    println!("building release...");
     if !build_binaries!(
         |c: &mut Command| {
             c.arg("--release");
@@ -77,12 +84,10 @@ pub fn local_update() -> Result<()> {
         return Err(Error::BuildFailure);
     }
 
-    println!("{}", executables::get(Executable::Server, "release"));
+    let exec = executables::get(Executable::Server, "release");
+    let path = home::get()?.join(config::get("path")?).join("server");
 
-    fs::copy(
-        executables::get(Executable::Server, "release"),
-        home::get()?.join(".local").join("bin").join("server"),
-    )?;
+    executables::sudo_update(exec, path)?;
 
     Ok(())
 }
@@ -107,6 +112,9 @@ pub fn local_self_update() -> Result<()> {
         path::MAIN_SEPARATOR_STR,
         executables::get(Executable::ServerupUpdater, "release")
     ))
+    .stdin(Stdio::inherit())
+    .stdout(Stdio::inherit())
+    .stderr(Stdio::inherit())
     .spawn()?;
 
     Ok(())
