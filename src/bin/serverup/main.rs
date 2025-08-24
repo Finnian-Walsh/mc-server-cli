@@ -5,9 +5,9 @@ use clap::Parser;
 use cli::*;
 
 fn main() -> updater::Result<()> {
-    let cli = Cli::parse();
+    let args = Cli::parse();
 
-    match cli.command {
+    match args.command {
         Commands::SelfCmd { command } => match command {
             SelfCommands::Update { local } => {
                 if local {

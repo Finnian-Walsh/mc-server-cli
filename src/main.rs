@@ -10,9 +10,9 @@ use cli::*;
 use config::unwrap_or_default;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let cli = Cli::parse();
+    let args = Cli::parse();
 
-    match cli.command {
+    match args.command {
         Commands::Attach { session } => {
             let session = unwrap_or_default(session)?;
             tmux::attach(&session)?;
