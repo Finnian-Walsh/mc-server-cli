@@ -19,7 +19,9 @@ pub fn get() -> Result<&'static Path> {
             HOME_DIR.set(home).unwrap();
             Ok(HOME_DIR.get().unwrap())
         }
-        None => Err(Error::new(ErrorKind::NotFound, "Failed to get home directory")),
+        None => Err(Error::new(
+            ErrorKind::NotFound,
+            "Failed to get home directory",
+        )),
     }
 }
-
