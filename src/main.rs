@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Commands::Default { action } => match action {
             DefaultCommands::Get => println!("{}", config::get_default()?),
-            DefaultCommands::Set { server } => println!("Setting {}...", server),
+            DefaultCommands::Set { server } => config::set("default", server)?,
         },
         Commands::Deploy { server } => {
             let server = unwrap_or_default(server)?;
