@@ -23,6 +23,8 @@ fn main() -> updater::Result<()> {
             } else {
                 updater::remote_update()?;
             }
+
+            println!("Updated server");
         }
     }
 
