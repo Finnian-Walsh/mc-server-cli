@@ -9,7 +9,11 @@ pub fn update_with_git(commit: Option<String>) -> io::Result<()> {
     Command::new("cargo")
         .arg("install")
         .arg("--git")
-        .arg(if let Some(commit) = commit { format!("{}/commit/{}", REPO_URL, commit) } else { REPO_URL.to_string() })
+        .arg(if let Some(commit) = commit {
+            format!("{}/commit/{}", REPO_URL, commit)
+        } else {
+            REPO_URL.to_string()
+        })
         .arg("--force")
         .spawn()?
         .wait()?;

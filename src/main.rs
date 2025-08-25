@@ -3,8 +3,9 @@ mod cli;
 mod config;
 mod deployment;
 mod home;
-mod tmux;
+mod new;
 mod repo;
+mod tmux;
 
 use clap::Parser;
 use cli::*;
