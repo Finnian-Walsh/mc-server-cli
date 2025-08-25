@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else if git {
                 repo::update_with_git(commit)?;
             } else {
-                // not allowed
+                unreachable!("Clap ensures git or some is provided");
             }
         }
     };

@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{ArgGroup, Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -58,7 +58,13 @@ pub enum Commands {
         inactive: bool,
     },
 
-    #[command(visible_aliases = ["up", "upd"], about = "Update the server binary")]
+    #[command(visible_aliases = ["up", "upd"], about = "Update the server binary",
+        group(
+                ArgGroup::new("source")
+                    .required(true)
+                    .args(&["git", "path"])
+            )
+    )]
     Update {
         #[arg(short, long)]
         git: bool,
