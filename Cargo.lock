@@ -356,7 +356,6 @@ dependencies = [
  "clap",
  "const_format",
  "dirs",
- "once_cell",
 ]
 
 [[package]]
