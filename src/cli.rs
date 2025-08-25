@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "server", version, about = "Server CLI tool")]
@@ -55,6 +56,18 @@ pub enum Commands {
 
         #[arg(short, long)]
         inactive: bool,
+    },
+
+    #[command(visible_aliases = ["up", "upd"], about = "Update the server binary")]
+    Update {
+        #[arg(short, long)]
+        git: bool,
+
+        #[arg(short, long)]
+        commit: Option<String>,
+
+        #[arg(short, long)]
+        path: Option<PathBuf>,
     },
 }
 

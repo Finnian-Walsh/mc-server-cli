@@ -4,6 +4,7 @@ mod config;
 mod deployment;
 mod home;
 mod tmux;
+mod repo;
 
 use clap::Parser;
 use cli::*;
@@ -51,6 +52,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Stop { server } => {
             let server = unwrap_or_default(server)?;
             tmux::execute(server, "stop")?;
+        }
+        Commands::Update { git, commit, path } => {
+            if let Some(path) = path {
+                repo::update_with_path(path)?;
+            } else if git {
+                repo::update_with_git(commit)?;
+            } else {
+                // not allowed
+            }
         }
     };
 
