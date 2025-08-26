@@ -55,17 +55,11 @@ pub enum Error {
     TmuxFailure { code: Option<i32>, stderr: String },
 }
 
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Error::Io(err)
-    }
-}
-
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::Io(err) => write!(f, "{}", err),
-            Error::TmuxFailure { code, stderr } => write!(
+            Self::Io(err) => write!(f, "{}", err),
+            Self::TmuxFailure { code, stderr } => write!(
                 f,
                 "Tmux failed with code {}: {}",
                 code.map(|c| c.to_string())
@@ -73,6 +67,12 @@ impl fmt::Display for Error {
                 stderr
             ),
         }
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Self {
+        Self::Io(err)
     }
 }
 
