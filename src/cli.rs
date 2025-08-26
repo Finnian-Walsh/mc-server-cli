@@ -1,4 +1,4 @@
-use crate::creator;
+use crate::file_manager;
 use clap::{ArgGroup, Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -11,7 +11,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    #[command(visible_alias = "att", aliases = &["connect", "con"], about = "Attach to a server session")]
+    #[command(visible_alias = "att", aliases = ["connect", "con"], about = "Attach to a server session")]
     Attach {
         #[arg()]
         session: Option<String>,
@@ -29,7 +29,7 @@ pub enum Commands {
         action: DefaultCommands,
     },
 
-    #[command(visible_alias = "dpl", visible_aliases = &["start", "st"], about = "Deploy a server")]
+    #[command(visible_alias = "dpl", visible_aliases = ["start", "st"], about = "Deploy a server")]
     Deploy {
         #[arg()]
         server: Option<String>,
@@ -59,16 +59,22 @@ pub enum Commands {
         inactive: bool,
     },
 
-    #[command()]
+    #[command(about = "Create a new server")]
     New {
         #[clap(value_enum)]
-        loader: creator::Loader,
+        loader: file_manager::Loader,
 
         #[arg()]
         version: Option<String>,
 
         #[arg()]
         name: Option<String>,
+    },
+
+    #[command(visible_alias = "rm", visible_aliases = ["del"], about = "Remove a server")]
+    Remove {
+        #[arg()]
+        server: String,
     },
 
     #[command(visible_aliases = ["up", "upd"], about = "Update the server binary",
