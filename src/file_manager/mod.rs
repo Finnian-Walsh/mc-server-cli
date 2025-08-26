@@ -5,7 +5,7 @@ use crate::{config, home};
 use clap::ValueEnum;
 use reqwest::{blocking, header};
 use std::{
-    env, fmt,
+    env,
     fs::{self, File},
     io::{self, Write},
     path::{Path, PathBuf},
@@ -52,13 +52,10 @@ pub fn remove_dir_with_retries<P: AsRef<Path>>(dir: P) -> io::Result<()> {
     unreachable!("Code returns before the for loop ends")
 }
 
-pub fn remove_server_with_confirmation<S>(server_name: S) -> io::Result<()>
-where
-    S: AsRef<str> + AsRef<Path> + for<'a> PartialEq<&'a str> + fmt::Display,
-{
+pub fn remove_server_with_confirmation(server_name: String) -> io::Result<()> {
     if loop {
         print!(
-            "Enter {} to delete the server or enter \"\" to cancel operation",
+            "Enter {} to delete the server or nothing to cancel operation: ",
             server_name
         );
         io::stdout().flush()?;
@@ -66,11 +63,11 @@ where
         let mut response = String::new();
         io::stdin().read_line(&mut response)?;
 
-        match response.as_str() {
-            ref s if server_name == *s => break true,
-            "" => break false,
-            _ => continue,
-        };
+        if server_name == response.trim_end() {
+            break true;
+        } else if response.is_empty() {
+            break false;
+        }
     } {
         remove_dir_with_retries(home::get()?.join(config::get("servers")?).join(server_name))?;
     }
