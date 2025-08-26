@@ -16,16 +16,16 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::Io(err) => write!(f, "{}", err),
-            Error::NoServerDirectory(dir) => write!(
+            Self::Io(err) => write!(f, "{}", err),
+            Self::NoServerDirectory(dir) => write!(
                 f,
                 "Server directory {} does not exist",
                 dir.to_string_lossy()
             ),
-            Error::NoJarfile(jarfile) => {
+            Self::NoJarfile(jarfile) => {
                 write!(f, "Jar file {} does not exist", jarfile.to_string_lossy())
             }
-            Error::NoJarfileTxt(jarfile_txt) => write!(
+            Self::NoJarfileTxt(jarfile_txt) => write!(
                 f,
                 "{} does not exist, and it is needed to specify the jar path",
                 jarfile_txt.to_string_lossy()
@@ -36,7 +36,7 @@ impl fmt::Display for Error {
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
-        Error::Io(err)
+        Self::Io(err)
     }
 }
 
