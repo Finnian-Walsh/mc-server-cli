@@ -1,8 +1,8 @@
 mod backup;
 mod cli;
 mod config;
-mod creator;
 mod deployment;
+mod file_manager;
 mod home;
 mod repo;
 mod tmux;
@@ -10,6 +10,7 @@ mod tmux;
 use clap::Parser;
 use cli::*;
 use config::unwrap_or_default;
+use url::Url;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
@@ -55,17 +56,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             version,
             name,
         } => {
-            use creator::Loader;
+            use file_manager::*;
 
-            match loader {
-                Loader::Purpur => creator::purpur::new(version, name)?,
-                _ => eprintln!("Unhandled"),
-            };
+            make_server(
+                name.unwrap_or_else(|| format!("{:?}-server", loader).to_lowercase()),
+                Url::parse(&match loader {
+                    Loader::Fabric => fabric::new(version)?,
+                    Loader::Purpur => purpur::new(version)?,
+                    _ => "unhandled".to_string(),
+                })?,
+            )?;
         }
         Commands::Stop { server } => {
             let server = unwrap_or_default(server)?;
             tmux::execute(server, "stop")?;
         }
+        Commands::Remove { server } => file_manager::remove_server(server)?,
         Commands::Update { git, commit, path } => {
             if let Some(path) = path {
                 repo::update_with_path(path)?;

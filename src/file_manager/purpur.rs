@@ -1,4 +1,3 @@
-use super::make_server;
 use reqwest::{self, blocking};
 use serde_json::Value;
 use std::{fmt, io, result};
@@ -61,7 +60,7 @@ fn get_current_version() -> Result<String> {
     Ok(current.to_string())
 }
 
-pub fn new(version: Option<String>, server_name: Option<String>) -> Result<()> {
+pub fn new(version: Option<String>) -> Result<String> {
     let version = version.map_or_else(get_current_version, |ver| Ok(ver))?;
     let version_url = format!("{}/{}", BASE_API_URL, version);
     let response_json: Value = blocking::get(&version_url)?.json()?;
@@ -71,19 +70,18 @@ pub fn new(version: Option<String>, server_name: Option<String>) -> Result<()> {
         .ok_or_else(|| Error::NoBuilds {
             version: version.clone(),
         })?;
-    let latest = builds["latest"]
+    let latest_build = builds["latest"]
         .as_str()
         .ok_or_else(|| Error::NoLatestBuild {
             version: version.clone(),
         })?;
 
-    println!("Attempting to download purpur build: {}...", latest);
+    let build_url = format!("{}/{}/download", &version_url, &latest_build);
 
-    let build_url = format!("{}/{}/download", &version_url, &latest);
-    let response = blocking::get(build_url)?;
-    let file_name = format!("purpur-{}-{}.jar", &version, &latest);
+    println!(
+        "Creating purpur server (v{}, build {})",
+        version, latest_build
+    );
 
-    make_server(server_name.unwrap_or_else(|| format!("purpur-server-{}", latest)), response, file_name)?;
-
-    Ok(())
+    Ok(build_url)
 }
