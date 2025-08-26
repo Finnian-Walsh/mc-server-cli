@@ -84,7 +84,7 @@ pub fn new(game_version: Option<String>) -> Result<String> {
         .ok_or(Error::StableInstallerNotFound)?;
 
     println!(
-        "Installing fabric server (v{}, loader {}, installer {}",
+        "Installing fabric server (v{}, loader {}, installer {})",
         game_version, loader, installer
     );
 
