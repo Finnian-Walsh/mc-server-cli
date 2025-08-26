@@ -1,9 +1,9 @@
 mod backup;
 mod cli;
 mod config;
+mod creator;
 mod deployment;
 mod home;
-mod new;
 mod repo;
 mod tmux;
 
@@ -49,6 +49,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 println!("{}", tmux::get_servers()?.join("\n"));
             }
+        }
+        Commands::New {
+            loader,
+            version,
+            name,
+        } => {
+            use creator::Loader;
+
+            match loader {
+                Loader::Purpur => creator::purpur::new(version, name)?,
+                _ => eprintln!("Unhandled"),
+            };
         }
         Commands::Stop { server } => {
             let server = unwrap_or_default(server)?;

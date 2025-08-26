@@ -1,3 +1,4 @@
+use crate::creator;
 use clap::{ArgGroup, Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -56,6 +57,18 @@ pub enum Commands {
 
         #[arg(short, long)]
         inactive: bool,
+    },
+
+    #[command()]
+    New {
+        #[clap(value_enum)]
+        loader: creator::Loader,
+
+        #[arg()]
+        version: Option<String>,
+
+        #[arg()]
+        name: Option<String>,
     },
 
     #[command(visible_aliases = ["up", "upd"], about = "Update the server binary",
