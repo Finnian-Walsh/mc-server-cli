@@ -1194,6 +1194,7 @@ dependencies = [
  "dirs",
  "reqwest",
  "serde_json",
+ "url",
 ]
 
 [[package]]
