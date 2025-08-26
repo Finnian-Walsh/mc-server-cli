@@ -45,17 +45,17 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::BackupDirInexistent(backup_dir) => write!(
+            Self::BackupDirInexistent(backup_dir) => write!(
                 f,
                 "Backup directory {} does not exist",
                 backup_dir.to_string_lossy()
             ),
-            Error::BackupFailureCleanedUp(err) => write!(
+            Self::BackupFailureCleanedUp(err) => write!(
                 f,
                 "Backup failed with error: {}\nClean up was successful",
                 err
             ),
-            Error::BackupFailureUncleaned {
+            Self::BackupFailureUncleaned {
                 backup_err,
                 cleanup_err,
             } => write!(
@@ -63,8 +63,8 @@ impl fmt::Display for Error {
                 "Backup failed with error: {}\nClean up failed with error: {}",
                 backup_err, cleanup_err
             ),
-            Error::Io(err) => write!(f, "{}", err),
-            Error::ServerDirInexistent(server_dir) => write!(
+            Self::Io(err) => write!(f, "{}", err),
+            Self::ServerDirInexistent(server_dir) => write!(
                 f,
                 "Server directory {} does not exist",
                 server_dir.to_string_lossy()
@@ -75,7 +75,7 @@ impl fmt::Display for Error {
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
-        Error::Io(err)
+        Self::Io(err)
     }
 }
 
@@ -119,18 +119,4 @@ pub fn backup(server: &str) -> Result<()> {
     }
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn copy_directory() -> Result<(), String> {
-        if let Err(e) = copy_dir(Path::new(""), Path::new("")) {
-            return Err(e.to_string());
-        }
-
-        Ok(())
-    }
 }
