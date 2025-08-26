@@ -5,9 +5,9 @@ use crate::{config, home};
 use clap::ValueEnum;
 use reqwest::{blocking, header};
 use std::{
-    env,
+    env, fmt,
     fs::{self, File},
-    io,
+    io::{self, Write},
     path::{Path, PathBuf},
 };
 use url::Url;
@@ -52,8 +52,28 @@ pub fn remove_dir_with_retries<P: AsRef<Path>>(dir: P) -> io::Result<()> {
     unreachable!("Code returns before the for loop ends")
 }
 
-pub fn remove_server<P: AsRef<Path>>(server_name: P) -> io::Result<()> {
-    remove_dir_with_retries(home::get()?.join(config::get("servers")?).join(server_name))?;
+pub fn remove_server_with_confirmation<S>(server_name: S) -> io::Result<()>
+where
+    S: AsRef<str> + AsRef<Path> + for<'a> PartialEq<&'a str> + fmt::Display,
+{
+    if loop {
+        print!(
+            "Enter {} to delete the server or enter \"\" to cancel operation",
+            server_name
+        );
+        io::stdout().flush()?;
+
+        let mut response = String::new();
+        io::stdin().read_line(&mut response)?;
+
+        match response.as_str() {
+            ref s if server_name == *s => break true,
+            "" => break false,
+            _ => continue,
+        };
+    } {
+        remove_dir_with_retries(home::get()?.join(config::get("servers")?).join(server_name))?;
+    }
     Ok(())
 }
 
@@ -82,7 +102,7 @@ pub fn make_server(
     println!("{}", file_name);
 
     if let Err(err) = copy_jar(server_dir, file_name, response) {
-        remove_server(server_root_dir)?;
+        remove_dir_with_retries(server_root_dir)?;
         return Err(Box::new(err));
     }
 

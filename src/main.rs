@@ -71,7 +71,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let server = unwrap_or_default(server)?;
             tmux::execute(server, "stop")?;
         }
-        Commands::Remove { server } => file_manager::remove_server(server)?,
+        Commands::Remove { server } => file_manager::remove_server_with_confirmation(server)?,
         Commands::Update { git, commit, path } => {
             if let Some(path) = path {
                 repo::update_with_path(path)?;
