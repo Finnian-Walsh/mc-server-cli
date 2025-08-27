@@ -1,43 +1,27 @@
 use reqwest::{self, blocking};
 use serde_json::Value;
-use std::{fmt, io, result};
+use std::{io, result};
+use thiserror::Error;
 
 static BASE_FABRIC_URL: &str = "https://meta.fabricmc.net/v2/versions";
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
-    Io(io::Error),
-    Reqwest(reqwest::Error),
+    #[error("{0}")]
+    Io(#[from] io::Error),
+
+    #[error("{0}")]
+    Reqwest(#[from] reqwest::Error),
+
+    #[error("No stable fabric installer could be found")]
     StableInstallerNotFound,
+
+    #[error("No stable fabric loader could be found")]
     StableLoaderNotFound,
+
+    #[error("No stable fabric version could be found")]
     StableVersionNotFound,
 }
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Io(err) => write!(f, "{}", err),
-            Self::Reqwest(err) => write!(f, "{}", err),
-            Self::StableInstallerNotFound => write!(f, "No stable fabric installer could be found"),
-            Self::StableLoaderNotFound => write!(f, "No stable fabric loader could be found"),
-            Self::StableVersionNotFound => write!(f, "No stable fabric version could be found"),
-        }
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Self::Io(err)
-    }
-}
-
-impl From<reqwest::Error> for Error {
-    fn from(err: reqwest::Error) -> Self {
-        Self::Reqwest(err)
-    }
-}
-
-impl std::error::Error for Error {}
 
 pub type Result<T> = result::Result<T, Error>;
 

@@ -1,49 +1,30 @@
 use reqwest::{self, blocking};
 use serde_json::Value;
-use std::{fmt, io, result};
+use std::{io, result};
+use thiserror::Error;
 
 static BASE_API_URL: &str = "https://api.purpurmc.org/v2/purpur";
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
-    Io(io::Error),
+    #[error("{0}")]
+    Io(#[from] io::Error),
+
+    #[error("No builds field was found for version {version}")]
     NoBuilds { version: String },
+
+    #[error("No current version was found")]
     NoCurrentVersion,
+
+    #[error("No latest build was found for version {version}")]
     NoLatestBuild { version: String },
+
+    #[error("No metadata was found")]
     NoMetadata,
-    Reqwest(reqwest::Error),
-}
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Io(err) => write!(f, "{}", err),
-            Self::NoBuilds { version } => {
-                write!(f, "No builds field was found for version {}", version)
-            }
-            Self::NoCurrentVersion => write!(f, "No current version was found at {}", BASE_API_URL),
-            Self::NoLatestBuild { version } => {
-                write!(f, "No latest build was found for version {}", version)
-            }
-            Self::NoMetadata => write!(f, "No metadata was found at {}", BASE_API_URL),
-            Self::Reqwest(err) => write!(f, "{}", err),
-        }
-    }
+    #[error("{0}")]
+    Reqwest(#[from] reqwest::Error),
 }
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Self::Io(err)
-    }
-}
-
-impl From<reqwest::Error> for Error {
-    fn from(err: reqwest::Error) -> Self {
-        Self::Reqwest(err)
-    }
-}
-
-impl std::error::Error for Error {}
 
 pub type Result<T> = result::Result<T, Error>;
 
