@@ -2,15 +2,14 @@ mod backup;
 mod cli;
 mod config;
 mod deployment;
-mod file_manager;
 mod home;
+mod platforms;
 mod repo;
-mod tmux;
+mod tmux_interactor;
 
 use clap::Parser;
 use cli::*;
 use config::unwrap_or_default;
-use url::Url;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Cli::parse();
@@ -18,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match args.command {
         Commands::Attach { session } => {
             let session = unwrap_or_default(session)?;
-            tmux::attach(&session)?;
+            tmux_interactor::attach(&session)?;
         }
         Commands::Backup { server } => {
             let server = unwrap_or_default(server)?;
@@ -31,11 +30,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         Commands::Deploy { server } => {
             let server = unwrap_or_default(server)?;
-            tmux::new(Some(&server), Some(&deployment::get_command(&server)?))?;
+            tmux_interactor::new(Some(&server), Some(&deployment::get_command(&server)?))?;
         }
         Commands::Execute { server, command } => {
             let server = unwrap_or_default(server)?;
-            tmux::execute(server, command)?;
+            tmux_interactor::execute(server, command)?;
         }
         Commands::List { active, inactive } => {
             if active {
@@ -44,34 +43,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     return Ok(());
                 }
 
-                println!("{}", tmux::get_active_servers()?.join("\n"));
+                println!("{}", tmux_interactor::get_active_servers()?.join("\n"));
             } else if inactive {
-                println!("{}", tmux::get_inactive_servers()?.join("\n"));
+                println!("{}", tmux_interactor::get_inactive_servers()?.join("\n"));
             } else {
-                println!("{}", tmux::get_servers()?.join("\n"));
+                println!("{}", tmux_interactor::get_servers()?.join("\n"));
             }
         }
         Commands::New {
-            loader,
+            platform,
             version,
             name,
         } => {
-            use file_manager::*;
-
-            make_server(
-                name.unwrap_or_else(|| format!("{:?}-server", loader).to_lowercase()),
-                Url::parse(&match loader {
-                    Loader::Fabric => fabric::new(version)?,
-                    Loader::Purpur => purpur::new(version)?,
-                    _ => "unhandled".to_string(),
-                })?,
-            )?;
+            platforms::make_server(platform, version, name)?;
         }
         Commands::Stop { server } => {
             let server = unwrap_or_default(server)?;
-            tmux::execute(server, "stop")?;
+            tmux_interactor::execute(server, "stop")?;
         }
-        Commands::Remove { server } => file_manager::remove_server_with_confirmation(server)?,
+        Commands::Remove { server } => platforms::remove_server_with_confirmation(server)?,
         Commands::Update { git, commit, path } => {
             if let Some(path) = path {
                 repo::update_with_path(path)?;
