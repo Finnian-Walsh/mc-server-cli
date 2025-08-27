@@ -1,46 +1,25 @@
 use crate::{config, home};
 use std::{
-    fmt, fs, io,
+    fs, io,
     path::{Path, PathBuf},
     result,
 };
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
-    Io(io::Error),
+    #[error("{0}")]
+    Io(#[from] io::Error),
+
+    #[error("Server directory {0} does not exist")]
     NoServerDirectory(PathBuf),
+
+    #[error("Jar file {0} does not exist")]
     NoJarfile(PathBuf),
+
+    #[error("{0} does not exist, and it is needed to specify the jar path")]
     NoJarfileTxt(PathBuf),
 }
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Io(err) => write!(f, "{}", err),
-            Self::NoServerDirectory(dir) => write!(
-                f,
-                "Server directory {} does not exist",
-                dir.to_string_lossy()
-            ),
-            Self::NoJarfile(jarfile) => {
-                write!(f, "Jar file {} does not exist", jarfile.to_string_lossy())
-            }
-            Self::NoJarfileTxt(jarfile_txt) => write!(
-                f,
-                "{} does not exist, and it is needed to specify the jar path",
-                jarfile_txt.to_string_lossy()
-            ),
-        }
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Self::Io(err)
-    }
-}
-
-impl std::error::Error for Error {}
 
 pub type Result<T> = result::Result<T, Error>;
 
