@@ -2,10 +2,11 @@ use crate::config;
 use crate::home;
 use chrono::Local;
 use std::{
-    fmt, fs, io,
+    fs, io,
     path::{Path, PathBuf},
     result,
 };
+use thiserror::Error;
 
 pub fn copy_dir(src: &Path, dst: &Path) -> io::Result<()> {
     if true {
@@ -30,56 +31,26 @@ pub fn copy_dir(src: &Path, dst: &Path) -> io::Result<()> {
     Ok(())
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
+    #[error("Backup directory {0} does not exist")]
     BackupDirInexistent(PathBuf),
+
+    #[error("Backup failed with error: {0}\nClean up was successful")]
     BackupFailureCleanedUp(io::Error),
+
+    #[error("Backup failed with error: {backup_err}\nClean up failed with error: {cleanup_err}")]
     BackupFailureUncleaned {
         backup_err: io::Error,
         cleanup_err: io::Error,
     },
-    Io(io::Error),
+
+    #[error("{0}")]
+    Io(#[from] io::Error),
+
+    #[error("Server directory {0} does not exist")]
     ServerDirInexistent(PathBuf),
 }
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::BackupDirInexistent(backup_dir) => write!(
-                f,
-                "Backup directory {} does not exist",
-                backup_dir.to_string_lossy()
-            ),
-            Self::BackupFailureCleanedUp(err) => write!(
-                f,
-                "Backup failed with error: {}\nClean up was successful",
-                err
-            ),
-            Self::BackupFailureUncleaned {
-                backup_err,
-                cleanup_err,
-            } => write!(
-                f,
-                "Backup failed with error: {}\nClean up failed with error: {}",
-                backup_err, cleanup_err
-            ),
-            Self::Io(err) => write!(f, "{}", err),
-            Self::ServerDirInexistent(server_dir) => write!(
-                f,
-                "Server directory {} does not exist",
-                server_dir.to_string_lossy()
-            ),
-        }
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Self::Io(err)
-    }
-}
-
-impl std::error::Error for Error {}
 
 pub type Result<T> = result::Result<T, Error>;
 
