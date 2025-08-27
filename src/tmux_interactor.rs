@@ -7,52 +7,13 @@ use std::{
     process::{Command, Stdio},
     result,
 };
+use thiserror::Error;
 
-fn get_sessions() -> io::Result<HashSet<String>> {
-    let output = Command::new("tmux").arg("list-sessions").output()?;
-
-    if !output.status.success() {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            "tmux list-sessions command has failed",
-        ));
-    }
-
-    Ok(String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .filter_map(|line| line.find(':').map(|pos| line[..pos].to_string()))
-        .collect())
-}
-
-pub fn get_servers() -> io::Result<Vec<String>> {
-    let mut servers = vec![];
-
-    for entry in fs::read_dir(home::get()?.join(config::get("servers")?))? {
-        let entry = entry?;
-        servers.push(entry.file_name().to_string_lossy().into_owned());
-    }
-
-    Ok(servers)
-}
-
-pub fn get_active_servers() -> io::Result<Vec<String>> {
-    let sessions = get_sessions()?;
-    let mut servers = get_servers()?;
-    servers.retain(|server| sessions.contains(server));
-    Ok(servers)
-}
-
-pub fn get_inactive_servers() -> io::Result<Vec<String>> {
-    let sessions = get_sessions()?;
-    let mut servers = get_servers()?;
-    servers.retain(|server| !sessions.contains(server));
-    Ok(servers)
-}
-
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
-    Io(io::Error),
-    TmuxFailure { code: Option<i32>, stderr: String },
+    Io(#[from] io::Error),
+
+    TmuxFailure { code: Option<i32>, stderr: Vec<u8> },
 }
 
 impl fmt::Display for Error {
@@ -63,24 +24,59 @@ impl fmt::Display for Error {
                 f,
                 "Tmux failed with code {}: {}",
                 code.map(|c| c.to_string())
-                    .unwrap_or_else(|| "none".to_string()),
-                stderr
+                    .unwrap_or_else(|| String::from("none")),
+                String::from_utf8_lossy(stderr)
             ),
         }
     }
 }
 
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Self {
-        Self::Io(err)
-    }
-}
-
-impl std::error::Error for Error {}
-
 pub type Result<T> = result::Result<T, Error>;
 
+fn get_sessions() -> Result<HashSet<String>> {
+    let output = Command::new("tmux").arg("list-sessions").output()?;
+
+    if !output.status.success() {
+        return Err(Error::TmuxFailure {
+            code: output.status.code(),
+            stderr: output.stderr,
+        });
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .filter_map(|line| line.find(':').map(|pos| line[..pos].to_string()))
+        .collect())
+}
+
+pub fn get_servers() -> Result<Vec<String>> {
+    let mut servers = vec![];
+
+    for entry in fs::read_dir(home::get()?.join(config::get("servers")?))? {
+        let entry = entry?;
+        servers.push(entry.file_name().to_string_lossy().into_owned());
+    }
+
+    Ok(servers)
+}
+
+pub fn get_active_servers() -> Result<Vec<String>> {
+    let sessions = get_sessions()?;
+    let mut servers = get_servers()?;
+    servers.retain(|server| sessions.contains(server));
+    Ok(servers)
+}
+
+pub fn get_inactive_servers() -> Result<Vec<String>> {
+    let sessions = get_sessions()?;
+    let mut servers = get_servers()?;
+    servers.retain(|server| !sessions.contains(server));
+    Ok(servers)
+}
+
 pub fn attach(session: &str) -> Result<()> {
+    if session == "." {}
+
     let mut child = Command::new("tmux")
         .arg("attach")
         .arg("-t")
@@ -93,7 +89,7 @@ pub fn attach(session: &str) -> Result<()> {
     if status.success() {
         Ok(())
     } else {
-        let mut stderr = String::new();
+        let mut buf = Vec::new();
         child
             .stderr
             .take()
@@ -101,11 +97,11 @@ pub fn attach(session: &str) -> Result<()> {
                 io::ErrorKind::BrokenPipe,
                 "Failed to take stderr pipe",
             ))?
-            .read_to_string(&mut stderr)?;
+            .read_to_end(&mut buf)?;
 
         Err(Error::TmuxFailure {
             code: status.code(),
-            stderr,
+            stderr: buf,
         })
     }
 }
