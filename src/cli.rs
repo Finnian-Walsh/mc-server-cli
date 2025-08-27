@@ -1,4 +1,4 @@
-use crate::file_manager;
+use crate::platforms;
 use clap::{ArgGroup, Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -52,17 +52,17 @@ pub enum Commands {
 
     #[command(visible_alias = "ls", about = "List all, active or inactive servers")]
     List {
-        #[arg(short, long)]
+        #[arg(short, long, conflicts_with = "inactive")]
         active: bool,
 
-        #[arg(short, long)]
+        #[arg(short, long, conflicts_with = "active")]
         inactive: bool,
     },
 
     #[command(about = "Create a new server")]
     New {
         #[clap(value_enum)]
-        loader: file_manager::Loader,
+        platform: platforms::Platform,
 
         #[arg()]
         version: Option<String>,
