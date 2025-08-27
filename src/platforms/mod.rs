@@ -10,10 +10,9 @@ use std::{
     io::{self, Write},
     path::{Path, PathBuf},
 };
-use url::Url;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-pub enum Loader {
+pub enum Platform {
     Fabric,
     Forge,
     Neoforge,
@@ -52,37 +51,51 @@ pub fn remove_dir_with_retries<P: AsRef<Path>>(dir: P) -> io::Result<()> {
     unreachable!("Code returns before the for loop ends")
 }
 
-pub fn remove_server_with_confirmation(server_name: String) -> io::Result<()> {
+pub fn remove_server_with_confirmation(name: String) -> io::Result<()> {
     if loop {
         print!(
             "Enter {} to delete the server or nothing to cancel operation: ",
-            server_name
+            name
         );
         io::stdout().flush()?;
 
         let mut response = String::new();
         io::stdin().read_line(&mut response)?;
 
-        if server_name == response.trim_end() {
+        if name == response.trim_end() {
             break true;
         } else if response.is_empty() {
             break false;
         }
     } {
-        remove_dir_with_retries(home::get()?.join(config::get("servers")?).join(server_name))?;
+        remove_dir_with_retries(home::get()?.join(config::get("servers")?).join(name))?;
     }
     Ok(())
 }
 
 pub fn make_server(
-    server_name: String,
-    download_url: Url,
+    platform: Platform,
+    version: Option<String>,
+    name: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let server_root_dir = home::get()?.join(config::get("servers")?).join(server_name);
+    let download_url = match platform {
+        Platform::Fabric => fabric::new(version)?,
+        Platform::Forge => todo!(),
+        Platform::Neoforge => todo!(),
+        Platform::Paper => todo!(),
+        Platform::Purpur => purpur::new(version)?,
+    };
 
+    println!("Making server...");
+
+    let name = name.unwrap_or_else(|| format!("{:?}-server", platform).to_lowercase());
+
+    let server_root_dir = home::get()?.join(config::get("servers")?).join(name);
     let server_dir = server_root_dir.join("Server");
 
     fs::create_dir_all(&server_dir)?;
+
+    println!("{}", download_url);
 
     let response = blocking::get(download_url)?;
 
@@ -100,7 +113,7 @@ pub fn make_server(
 
     if let Err(err) = copy_jar(server_dir, file_name, response) {
         remove_dir_with_retries(server_root_dir)?;
-        return Err(Box::new(err));
+        return Err(err.into());
     }
 
     Ok(())
