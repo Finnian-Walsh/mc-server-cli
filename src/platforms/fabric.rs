@@ -1,71 +1,47 @@
+use super::{Result, get_array, get_str, to_json_object};
 use reqwest::{self, blocking};
 use serde_json::Value;
-use std::{io, result};
-use thiserror::Error;
 
-static BASE_FABRIC_URL: &str = "https://meta.fabricmc.net/v2/versions";
+static BASE_API_URL: &str = "https://meta.fabricmc.net/v2/versions";
 
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("{0}")]
-    Io(#[from] io::Error),
+pub fn get(game_version: Option<String>) -> Result<String> {
+    let response_json: Value = blocking::get(BASE_API_URL)?.json()?;
+    let response_object = to_json_object(&response_json)?;
 
-    #[error("{0}")]
-    Reqwest(#[from] reqwest::Error),
-
-    #[error("No stable fabric installer could be found")]
-    StableInstallerNotFound,
-
-    #[error("No stable fabric loader could be found")]
-    StableLoaderNotFound,
-
-    #[error("No stable fabric version could be found")]
-    StableVersionNotFound,
-}
-
-pub type Result<T> = result::Result<T, Error>;
-
-pub fn new(game_version: Option<String>) -> Result<String> {
-    let response_json: Value = blocking::get(BASE_FABRIC_URL)?.json()?;
-
-    let game_version = game_version.map_or_else(
+    let game_version = game_version.map_or_else::<Result<String>, _, _>(
         || {
-            let latest_stable_entry = response_json["game"]
-                .as_array()
-                .ok_or(Error::StableVersionNotFound)?
+            let game_versions_array = get_array(&response_object, "game")?;
+            let stable_entry = game_versions_array
                 .iter()
-                .find(|game_version_entry| game_version_entry["stable"] == true)
-                .ok_or(Error::StableVersionNotFound)?
-                .as_object()
-                .ok_or(Error::StableVersionNotFound)?;
+                .find(|game_entry| game_entry["stable"] == true)
+                .unwrap();
 
-            latest_stable_entry["version"]
-                .as_str()
-                .map(|ver| ver.to_string())
-                .ok_or(Error::StableVersionNotFound)
+            Ok(get_str(to_json_object(&stable_entry)?, "version")?.to_string())
         },
-        |ver| Ok(ver),
+        |game_version| Ok(game_version),
     )?;
 
     let loader = response_json["loader"]
         .as_array()
-        .ok_or(Error::StableLoaderNotFound)?
+        .expect("Expected loader array in response")
         .iter()
         .find(|loader_entry| loader_entry["stable"] == true)
-        .ok_or(Error::StableLoaderNotFound)?
+        .expect("Expected a stable loader")
         .as_object()
-        .ok_or(Error::StableLoaderNotFound)?["version"]
+        .expect("Expected loader entry to be an object")["version"]
         .as_str()
-        .ok_or(Error::StableLoaderNotFound)?;
+        .expect("Expected version field of loader to be a string");
 
     let installer = response_json["installer"]
         .as_array()
-        .ok_or(Error::StableInstallerNotFound)?
+        .expect("Expected installer array in response")
         .iter()
         .find(|installer_entry| installer_entry["stable"] == true)
-        .ok_or(Error::StableInstallerNotFound)?["version"]
+        .expect("Expected a stable installer")
+        .as_object()
+        .expect("Expected installer entry to be an object")["version"]
         .as_str()
-        .ok_or(Error::StableInstallerNotFound)?;
+        .expect("Expected version field of installer to be a string");
 
     println!(
         "Installing fabric server (v{}, loader {}, installer {})",
@@ -74,6 +50,6 @@ pub fn new(game_version: Option<String>) -> Result<String> {
 
     Ok(format!(
         "{}/loader/{}/{}/{}/server/jar",
-        BASE_FABRIC_URL, game_version, loader, installer
+        BASE_API_URL, game_version, loader, installer
     ))
 }

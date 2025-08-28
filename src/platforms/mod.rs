@@ -1,15 +1,36 @@
 pub mod fabric;
 pub mod purpur;
 
-use crate::{config, home};
 use clap::ValueEnum;
-use reqwest::{blocking, header};
-use std::{
-    env,
-    fs::{self, File},
-    io::{self, Write},
-    path::{Path, PathBuf},
-};
+use std::{io, result};
+use thiserror::Error;
+use url::{self, Url};
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error(transparent)]
+    Io(#[from] io::Error),
+
+    #[error("Field {field} of type {json_type} not found")]
+    JsonFieldNotFound {
+        field: String,
+        json_type: &'static str,
+    },
+
+    #[error("wrong type: expected JSON {expected}")]
+    JsonExpectedType { expected: String },
+
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
+
+    #[error(transparent)]
+    ToStr(#[from] reqwest::header::ToStrError),
+
+    #[error(transparent)]
+    UrlParse(#[from] url::ParseError),
+}
+
+pub type Result<T> = result::Result<T, Error>;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
 pub enum Platform {
@@ -20,101 +41,51 @@ pub enum Platform {
     Purpur,
 }
 
-fn copy_jar<N, J: io::Read>(server_dir: PathBuf, file_name: N, mut jar: J) -> io::Result<()>
-where
-    N: AsRef<[u8]> + AsRef<Path>,
-    J: io::Read,
-{
-    env::set_current_dir(server_dir)?;
-
-    let mut jar_file = File::create(&file_name)?;
-    io::copy(&mut jar, &mut jar_file)?;
-
-    fs::write("jarfile.txt", file_name)?;
-
-    Ok(())
-}
-
-pub fn remove_dir_with_retries<P: AsRef<Path>>(dir: P) -> io::Result<()> {
-    const ATTEMPTS: u8 = 10;
-
-    for i in 1..=ATTEMPTS {
-        if let Err(err) = fs::remove_dir_all(&dir) {
-            if i == ATTEMPTS {
-                return Err(err);
-            }
-        } else {
-            return Ok(());
-        }
-    }
-
-    unreachable!("Code returns before the for loop ends")
-}
-
-pub fn remove_server_with_confirmation(name: String) -> io::Result<()> {
-    if loop {
-        print!(
-            "Enter {} to delete the server or nothing to cancel operation: ",
-            name
-        );
-        io::stdout().flush()?;
-
-        let mut response = String::new();
-        io::stdin().read_line(&mut response)?;
-
-        if name == response.trim_end() {
-            break true;
-        } else if response.is_empty() {
-            break false;
-        }
-    } {
-        remove_dir_with_retries(home::get()?.join(config::get("servers")?).join(name))?;
-    }
-    Ok(())
-}
-
-pub fn make_server(
-    platform: Platform,
-    version: Option<String>,
-    name: Option<String>,
-) -> Result<(), Box<dyn std::error::Error>> {
+pub fn get(platform: Platform, version: Option<String>) -> Result<Url> {
     let download_url = match platform {
-        Platform::Fabric => fabric::new(version)?,
+        Platform::Fabric => fabric::get(version)?,
         Platform::Forge => todo!(),
         Platform::Neoforge => todo!(),
         Platform::Paper => todo!(),
-        Platform::Purpur => purpur::new(version)?,
+        Platform::Purpur => purpur::get(version)?,
     };
 
-    println!("Making server...");
+    Ok(Url::parse(&download_url)?)
+}
 
-    let name = name.unwrap_or_else(|| format!("{:?}-server", platform).to_lowercase());
+type JsonArray = Vec<serde_json::Value>;
 
-    let server_root_dir = home::get()?.join(config::get("servers")?).join(name);
-    let server_dir = server_root_dir.join("Server");
+type JsonObject = serde_json::Map<String, serde_json::Value>;
 
-    fs::create_dir_all(&server_dir)?;
+pub fn get_array<'a>(parent: &'a JsonObject, field: &str) -> Result<&'a JsonArray> {
+    parent[field]
+        .as_array()
+        .ok_or_else(|| Error::JsonFieldNotFound {
+            field: field.to_string(),
+            json_type: "array",
+        })
+}
 
-    println!("{}", download_url);
+pub fn get_object<'a>(parent: &'a JsonObject, field: &str) -> Result<&'a JsonObject> {
+    parent[field]
+        .as_object()
+        .ok_or_else(|| Error::JsonFieldNotFound {
+            field: field.to_string(),
+            json_type: "object",
+        })
+}
 
-    let response = blocking::get(download_url)?;
+pub fn get_str<'a>(parent: &'a JsonObject, field: &str) -> Result<&'a str> {
+    parent[field]
+        .as_str()
+        .ok_or_else(|| Error::JsonFieldNotFound {
+            field: field.to_string(),
+            json_type: "string",
+        })
+}
 
-    let file_name = response
-        .headers()
-        .get(header::CONTENT_DISPOSITION)
-        .map(|disposition| disposition.to_str())
-        .transpose()?
-        .and_then(|cd| cd.split("filename=\"").nth(1))
-        .and_then(|slice| slice.split('"').nth(0))
-        .unwrap_or("unknown.jar")
-        .to_string();
-
-    println!("{}", file_name);
-
-    if let Err(err) = copy_jar(server_dir, file_name, response) {
-        remove_dir_with_retries(server_root_dir)?;
-        return Err(err.into());
-    }
-
-    Ok(())
+pub fn to_json_object<'a>(value: &'a serde_json::Value) -> Result<&'a JsonObject> {
+    value.as_object().ok_or_else(|| Error::JsonExpectedType {
+        expected: String::from("object"),
+    })
 }
