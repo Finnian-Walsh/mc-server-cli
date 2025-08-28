@@ -1,12 +1,10 @@
-use crate::config;
 use crate::home;
-use chrono::Local;
-use std::{
-    fs, io,
-    path::{Path, PathBuf},
-    result,
+use crate::{
+    config,
+    error::{Error, Result},
 };
-use thiserror::Error;
+use chrono::Local;
+use std::{fs, io, path::Path};
 
 pub fn copy_dir(src: &Path, dst: &Path) -> io::Result<()> {
     if true {
@@ -31,29 +29,6 @@ pub fn copy_dir(src: &Path, dst: &Path) -> io::Result<()> {
     Ok(())
 }
 
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("Backup directory {0} does not exist")]
-    BackupDirInexistent(PathBuf),
-
-    #[error("Backup failed with error: {0}\nClean up was successful")]
-    BackupFailureCleanedUp(io::Error),
-
-    #[error("Backup failed with error: {backup_err}\nClean up failed with error: {cleanup_err}")]
-    BackupFailureUncleaned {
-        backup_err: io::Error,
-        cleanup_err: io::Error,
-    },
-
-    #[error("{0}")]
-    Io(#[from] io::Error),
-
-    #[error("Server directory {0} does not exist")]
-    ServerDirInexistent(PathBuf),
-}
-
-pub type Result<T> = result::Result<T, Error>;
-
 pub fn backup(server: &str) -> Result<()> {
     let backup_ready = false;
     if !backup_ready {
@@ -65,13 +40,13 @@ pub fn backup(server: &str) -> Result<()> {
     let src_path = server_root_dir.join("Server");
 
     if !src_path.is_dir() {
-        return Err(Error::ServerDirInexistent(src_path));
+        return Err(Error::MissingDirectory(Some(src_path)));
     }
 
     let backup_dir = server_root_dir.join("Backups");
 
     if !backup_dir.is_dir() {
-        return Err(Error::BackupDirInexistent(backup_dir));
+        return Err(Error::MissingDirectory(Some(backup_dir)));
     }
 
     let dst_path = backup_dir.join(Local::now().format("%Y-%m-%d-%H-%M-%S").to_string());
@@ -79,14 +54,8 @@ pub fn backup(server: &str) -> Result<()> {
     println!("{}", dst_path.display());
 
     if let Err(backup_err) = copy_dir(&src_path, &dst_path) {
-        let Err(cleanup_err) = fs::remove_dir_all(&dst_path) else {
-            return Err(Error::BackupFailureCleanedUp(backup_err));
-        };
-
-        return Err(Error::BackupFailureUncleaned {
-            backup_err,
-            cleanup_err,
-        });
+        fs::remove_dir_all(&dst_path)?;
+        return Err(Error::Io(backup_err));
     }
 
     Ok(())

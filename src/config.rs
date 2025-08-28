@@ -1,8 +1,10 @@
-use crate::home;
+use crate::{
+    error::{Error, Result},
+    home,
+};
 use std::{
     collections::HashMap,
     fs,
-    io::{Error, ErrorKind, Result},
     path::PathBuf,
     sync::{Mutex, MutexGuard, OnceLock},
 };
@@ -19,7 +21,7 @@ fn get_config_map() -> Result<MutexGuard<'static, ConfigType>> {
     Ok(CONFIG
         .get_or_init(|| Mutex::new(HashMap::new()))
         .lock()
-        .map_err(|_| Error::new(ErrorKind::Other, "CONFIG map is poisoned"))?)
+        .map_err(|_| Error::Poison(Some(String::from("config hash map"))))?)
 }
 
 pub fn get_raw<T: AsRef<str> + Into<String>>(configuration: T) -> Result<String> {
@@ -46,7 +48,7 @@ pub fn get_default() -> Result<String> {
     let def = get("default")?;
 
     if def.len() == 0 {
-        return Err(Error::new(ErrorKind::UnexpectedEof, ".default file is empty").into());
+        return Err(Error::EmptyFile(Some(PathBuf::from(".default"))));
     }
 
     Ok(def)

@@ -2,18 +2,19 @@ mod backup;
 mod cli;
 mod config;
 mod deployment;
+mod error;
 mod home;
 mod platforms;
 mod repo;
+mod server;
 mod tmux_interactor;
 
 use clap::Parser;
 use cli::*;
+use color_eyre::eyre::Result;
 use config::unwrap_or_default;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Cli::parse();
-
+fn handle(args: Cli) -> Result<()> {
     match args.command {
         Commands::Attach { session } => {
             let session = unwrap_or_default(session)?;
@@ -55,13 +56,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             version,
             name,
         } => {
-            platforms::make_server(platform, version, name)?;
+            server::init(platforms::get(platform, version)?, platform, name)?;
         }
         Commands::Stop { server } => {
             let server = unwrap_or_default(server)?;
             tmux_interactor::execute(server, "stop")?;
         }
-        Commands::Remove { server } => platforms::remove_server_with_confirmation(server)?,
+        Commands::Remove { server } => server::remove_server_with_confirmation(server)?,
         Commands::Update { git, commit, path } => {
             if let Some(path) = path {
                 repo::update_with_path(path)?;
@@ -72,6 +73,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     };
+
+    Ok(())
+}
+
+fn main() -> Result<()> {
+    let args = Cli::parse();
+    color_eyre::install()?;
+
+    if let Err(err) = handle(args) {
+        eprintln!("{}", err);
+    }
 
     Ok(())
 }

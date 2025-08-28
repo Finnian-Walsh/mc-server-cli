@@ -1,43 +1,21 @@
-use crate::{config, home};
+use crate::{
+    config,
+    error::{Error, Result},
+    home,
+};
 use std::{
     collections::HashSet,
     ffi::OsStr,
-    fmt, fs,
+    fs,
     io::{self, Read},
     process::{Command, Stdio},
-    result,
 };
-use thiserror::Error;
-
-#[derive(Debug, Error)]
-pub enum Error {
-    Io(#[from] io::Error),
-
-    TmuxFailure { code: Option<i32>, stderr: Vec<u8> },
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Io(err) => write!(f, "{}", err),
-            Self::TmuxFailure { code, stderr } => write!(
-                f,
-                "Tmux failed with code {}: {}",
-                code.map(|c| c.to_string())
-                    .unwrap_or_else(|| String::from("none")),
-                String::from_utf8_lossy(stderr)
-            ),
-        }
-    }
-}
-
-pub type Result<T> = result::Result<T, Error>;
 
 fn get_sessions() -> Result<HashSet<String>> {
     let output = Command::new("tmux").arg("list-sessions").output()?;
 
     if !output.status.success() {
-        return Err(Error::TmuxFailure {
+        return Err(Error::CommandFailure {
             code: output.status.code(),
             stderr: output.stderr,
         });
@@ -99,7 +77,7 @@ pub fn attach(session: &str) -> Result<()> {
             ))?
             .read_to_end(&mut buf)?;
 
-        Err(Error::TmuxFailure {
+        Err(Error::CommandFailure {
             code: status.code(),
             stderr: buf,
         })
