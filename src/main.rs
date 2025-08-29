@@ -11,19 +11,16 @@ mod tmux_interactor;
 
 use clap::Parser;
 use cli::*;
-use color_eyre::eyre::Result;
 use config::unwrap_or_default;
+use error::Result;
 
-fn handle(args: Cli) -> Result<()> {
+fn main() -> Result<()> {
+    let args = Cli::parse();
+
     match args.command {
         Commands::Attach { session } => {
             let session = unwrap_or_default(session)?;
             tmux_interactor::attach(&session)?;
-        }
-        Commands::Backup { server } => {
-            let server = unwrap_or_default(server)?;
-            println!("Attempting to back up {}", server);
-            backup::backup(&server)?;
         }
         Commands::Default { action } => match action {
             DefaultCommands::Get => println!("{}", config::get_default()?),
@@ -73,17 +70,6 @@ fn handle(args: Cli) -> Result<()> {
             }
         }
     };
-
-    Ok(())
-}
-
-fn main() -> Result<()> {
-    let args = Cli::parse();
-    color_eyre::install()?;
-
-    if let Err(err) = handle(args) {
-        eprintln!("{}", err);
-    }
 
     Ok(())
 }

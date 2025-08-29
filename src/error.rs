@@ -1,4 +1,3 @@
-use crate::platforms;
 use reqwest::header;
 use std::{
     fmt::{self, Display, Formatter},
@@ -13,10 +12,11 @@ use url;
 pub enum Error {
     CommandFailure { code: Option<i32>, stderr: Vec<u8> },
     EmptyFile(Option<PathBuf>),
+    InvalidHeaderValue(#[from] header::InvalidHeaderValue),
     Io(#[from] io::Error),
     MissingDirectory(Option<PathBuf>),
     MissingFile(Option<PathBuf>),
-    Platform(#[from] platforms::Error),
+    PlatformsNotFound(String),
     Poison(Option<String>),
     Reqwest(#[from] reqwest::Error),
     ToStr(#[from] header::ToStrError),
@@ -37,6 +37,7 @@ impl Display for Error {
                 Some(file) => write!(f, "File {} is empty", file.display()),
                 None => write!(f, "Empty file"),
             },
+            Self::InvalidHeaderValue(err) => write!(f, "{}", err),
             Self::Io(err) => write!(f, "{}", err),
             Self::MissingDirectory(dir) => match dir {
                 Some(dir) => write!(f, "Directory {} is missing", dir.display()),
@@ -46,7 +47,7 @@ impl Display for Error {
                 Some(file) => write!(f, "File {} is missing", file.display()),
                 None => write!(f, "Missing file"),
             },
-            Self::Platform(err) => write!(f, "Platform error: {}", err),
+            Self::PlatformsNotFound(value) => write!(f, "Platforms not found: {}", value),
             Self::Poison(object) => match object {
                 Some(object) => write!(f, "{} is poisoned", object),
                 None => write!(f, "Poison error"),

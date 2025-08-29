@@ -17,12 +17,6 @@ pub enum Commands {
         session: Option<String>,
     },
 
-    #[command(visible_alias = "bu", about = "Backup a server")]
-    Backup {
-        #[arg()]
-        server: Option<String>,
-    },
-
     #[command(visible_alias = "def", about = "Set or get the default server")]
     Default {
         #[command(subcommand)]
