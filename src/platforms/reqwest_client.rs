@@ -7,22 +7,25 @@ use std::sync::OnceLock;
 
 const CONTACT_RAW: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/contact"));
 
-static USER_AGENT_STRING: OnceLock<String> = OnceLock::new();
+static CLIENT: OnceLock<Client> = OnceLock::new();
 
-pub fn get_user_agent_str() -> &'static str {
-    USER_AGENT_STRING.get_or_init(|| {
-        format!(
+pub fn create() -> Result<&'static Client> {
+    if let Some(client) = CLIENT.get() {
+        return Ok(client);
+    }
+
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        USER_AGENT,
+        HeaderValue::from_str(&format!(
             "{}/{} (contact: {})",
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_VERSION"),
             CONTACT_RAW.trim_start().trim_end().to_string()
-        )
-    })
-}
+        ))?,
+    );
 
-pub fn create() -> Result<Client> {
-    let mut headers = HeaderMap::new();
-    headers.insert(USER_AGENT, HeaderValue::from_str(get_user_agent_str())?);
+    let client = Client::builder().default_headers(headers).build()?;
 
-    Ok(Client::builder().default_headers(headers).build()?)
+    Ok(CLIENT.get_or_init(|| client))
 }

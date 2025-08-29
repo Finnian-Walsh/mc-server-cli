@@ -14,14 +14,7 @@ pub fn get() -> Result<&'static Path> {
         return Ok(home.as_path());
     }
 
-    match home_dir() {
-        Some(home) => {
-            HOME_DIR.set(home).unwrap();
-            Ok(HOME_DIR.get().unwrap())
-        }
-        None => Err(Error::new(
-            ErrorKind::NotFound,
-            "Failed to get home directory",
-        )),
-    }
+    let home = home_dir()
+        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Failed to get home directory"))?;
+    Ok(HOME_DIR.get_or_init(|| home).as_path())
 }
