@@ -20,7 +20,7 @@ pub fn get_user_agent_str() -> &'static str {
     })
 }
 
-pub fn get() -> Result<Client> {
+pub fn create() -> Result<Client> {
     let mut headers = HeaderMap::new();
     headers.insert(USER_AGENT, HeaderValue::from_str(get_user_agent_str())?);
 
