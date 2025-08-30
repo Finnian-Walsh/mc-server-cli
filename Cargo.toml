@@ -7,8 +7,17 @@ edition = "2024"
 clap = { version = "4.5.46", features = ["derive"] }
 const_format = "0.2.34"
 dirs = "6.0.0"
+serde = "1.0.219"
 serde_json = "1.0.143"
 reqwest = { version = "0.12.23", features = ["blocking", "json"] }
 thiserror = "2.0.16"
-serde = "1.0.219"
 url = "2.5.7"
+static_cfg = { path = "static_cfg" }
+
+[build-dependencies]
+serde = "1.0.219"
+static_cfg = { path = "static_cfg" }
+thiserror = "2.0.16"
+quote = "1.0.40"
+proc-macro2 = "1.0.101"
+toml = "0.9.5"
