@@ -2,6 +2,7 @@ pub mod config;
 mod error;
 pub mod home;
 pub mod platforms;
+mod reqwest_client;
 pub mod tmux_interactor;
 
 pub use error::{Error, Result};
