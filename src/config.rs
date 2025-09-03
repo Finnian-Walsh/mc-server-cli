@@ -1,69 +1,96 @@
 use crate::{
-    error::{Error, Result},
+    error::{Error, Mutexes, Result},
     home,
 };
+use config::{DEFAULT_DYNAMIC_CONFIG, DynamicConfig, STATIC_CONFIG};
 use std::{
-    collections::HashMap,
     fs,
-    path::PathBuf,
+    ops::Deref,
+    path::{Path, PathBuf},
     sync::{Mutex, MutexGuard, OnceLock},
 };
+use toml;
 
-pub type ConfigType = HashMap<String, String>;
+struct AutoConfig {
+    // type ValueType = OnceLock<Mutex<DynamicConfig<String>>>;
 
-static CONFIG: OnceLock<Mutex<ConfigType>> = OnceLock::new();
-
-fn get_server_config_path() -> Result<PathBuf> {
-    Ok(home::get()?.join(".config").join("server"))
+    value: <Self as Deref>::Target,
 }
 
-fn get_config_map() -> Result<MutexGuard<'static, ConfigType>> {
-    Ok(CONFIG
-        .get_or_init(|| Mutex::new(HashMap::new()))
-        .lock()
-        .map_err(|_| Error::Poison(Some(String::from("config hash map"))))?)
+impl AutoConfig {
+    fn write(&self) -> Result<()> {
+        let Some(mutex) = self.get() else {
+            return Ok(());
+        };
+
+        fs::create_dir_all(get_config_directory()?)?;
+        let guard = mutex.lock().map_err(|_| Error::Poison(Mutexes::Config))?;
+        fs::write(get_config_file()?, toml::to_string(&*guard)?)?;
+        Ok(())
+    }
 }
 
-pub fn get_raw<T: AsRef<str> + Into<String>>(configuration: T) -> Result<String> {
-    let mut config_map = get_config_map()?;
+impl Deref for AutoConfig {
+    type Target = OnceLock<Mutex<DynamicConfig<String>>>;
 
-    if let Some(value) = config_map.get(configuration.as_ref()) {
-        return Ok(value.clone());
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl Drop for AutoConfig {
+    fn drop(&mut self) {
+        if let Err(err) = self.write() {
+            eprintln!("Failed to write config: {}", err);
+            return;
+        }
+    }
+}
+
+static CONFIG: AutoConfig = AutoConfig {
+    value: OnceLock::new()
+};
+
+static CONFIG_DIRECTORY: OnceLock<PathBuf> = OnceLock::new();
+static CONFIG_FILE: OnceLock<PathBuf> = OnceLock::new();
+
+fn get_config_directory() -> Result<&'static Path> {
+    if let Some(path) = CONFIG_DIRECTORY.get() {
+        return Ok(path.as_path())
     }
 
-    let path = get_server_config_path()?.join(configuration.as_ref());
-
-    let value = fs::read_to_string(&path)?;
-    config_map.insert(configuration.into(), value.clone());
-    Ok(value)
+    let path = home::get()?.join(STATIC_CONFIG.dynamic_config_path);
+    Ok(CONFIG_DIRECTORY.get_or_init(|| path).as_path())
 }
 
-pub fn get<T: AsRef<str> + Into<String>>(configuration: T) -> Result<String> {
-    let mut value = get_raw(configuration)?;
-    value.truncate(value.trim_end().len());
-    Ok(value)
-}
-
-pub fn get_default() -> Result<String> {
-    let def = get("default")?;
-
-    if def.len() == 0 {
-        return Err(Error::EmptyFile(Some(PathBuf::from(".default"))));
+fn get_config_file() -> Result<&'static Path> {
+    if let Some(path) = CONFIG_FILE.get() {
+        return Ok(path.as_path());
     }
 
-    Ok(def)
+    let path = get_config_directory()?.join("config.toml");
+    Ok(CONFIG_FILE.get_or_init(|| path).as_path())
 }
 
-pub fn unwrap_or_default(server: Option<String>) -> Result<String> {
-    server.map_or_else(|| get_default(), |val| Ok(val))
+pub fn get() -> Result<MutexGuard<'static, DynamicConfig<String>>> {
+    if let Some(mutex) = CONFIG.get() {
+        return mutex.lock().map_err(|_| Error::Poison(Mutexes::Config))
+    }
+
+    let config_file = get_config_file()?;
+
+    let config: DynamicConfig<String> = if config_file.exists() {
+        let toml_string = fs::read_to_string(config_file)?;
+        toml::from_str(&toml_string)?
+    } else {
+        fs::write(config_file, toml::to_string(&DEFAULT_DYNAMIC_CONFIG)?)?;
+        (&DEFAULT_DYNAMIC_CONFIG).into()
+    };
+
+    CONFIG.get_or_init(|| Mutex::new(config)).lock().map_err(|_| Error::Poison(Mutexes::Config))
 }
 
-pub fn set<T: AsRef<str> + Into<String>>(configuration: T, value: String) -> Result<()> {
-    let path = get_server_config_path()?.join(configuration.as_ref());
-    fs::write(path, &value)?;
-
-    let mut config_map = get_config_map()?;
-    config_map.insert(configuration.into(), value);
-
-    Ok(())
+pub fn unwrap_or_default<'a>(server: Option<String>) -> Result<String> {
+   server.map_or_else(|| Ok(get()?.default_server.clone()), |val| Ok(val))
 }
+
