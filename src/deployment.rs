@@ -10,7 +10,7 @@ use std::{
 
 fn get_server_dir(server: &str) -> Result<PathBuf> {
     let server_dir = home::get()?
-        .join(config::get("servers")?)
+        .join(&config::get()?.servers_directory)
         .join(server)
         .join("Server");
 
@@ -42,7 +42,7 @@ pub fn get_command(server: &str) -> Result<String> {
     Ok(format!(
         "cd {} && java -jar {} {}",
         server_dir.to_string_lossy(),
-        config::get("arguments")?,
+        &config::get()?.default_java_args,
         get_server_jar_path(&server_dir)?.to_string_lossy()
     ))
 }

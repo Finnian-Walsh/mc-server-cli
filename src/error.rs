@@ -6,19 +6,27 @@ use std::{
     result,
 };
 use thiserror::Error;
+use toml;
 use url;
+
+#[derive(Debug, Error)]
+pub enum Mutexes {
+    #[error("CONFIG")]
+    Config,
+}
 
 #[derive(Debug, Error)]
 pub enum Error {
     CommandFailure { code: Option<i32>, stderr: Vec<u8> },
-    EmptyFile(Option<PathBuf>),
     InvalidHeaderValue(#[from] header::InvalidHeaderValue),
     Io(#[from] io::Error),
     MissingDirectory(Option<PathBuf>),
     MissingFile(Option<PathBuf>),
     PlatformsNotFound(String),
-    Poison(Option<String>),
+    Poison(Mutexes),
     Reqwest(#[from] reqwest::Error),
+    TomlDeserialize(#[from] toml::de::Error),
+    TomlSerialize(#[from] toml::ser::Error),
     ToStr(#[from] header::ToStrError),
     UrlParse(#[from] url::ParseError),
 }
@@ -33,10 +41,6 @@ impl Display for Error {
                     .unwrap_or_else(|| String::from("none")),
                 String::from_utf8_lossy(stderr)
             ),
-            Self::EmptyFile(file) => match file {
-                Some(file) => write!(f, "File {} is empty", file.display()),
-                None => write!(f, "Empty file"),
-            },
             Self::InvalidHeaderValue(err) => write!(f, "{}", err),
             Self::Io(err) => write!(f, "{}", err),
             Self::MissingDirectory(dir) => match dir {
@@ -48,11 +52,10 @@ impl Display for Error {
                 None => write!(f, "Missing file"),
             },
             Self::PlatformsNotFound(value) => write!(f, "Platforms not found: {}", value),
-            Self::Poison(object) => match object {
-                Some(object) => write!(f, "{} is poisoned", object),
-                None => write!(f, "Poison error"),
-            },
+            Self::Poison(mutex) => write!(f, "Mutex {} is poisoned", mutex),
             Self::Reqwest(err) => write!(f, "{}", err),
+            Self::TomlDeserialize(err) => write!(f, "{}", err),
+            Self::TomlSerialize(err) => write!(f, "{}", err),
             Self::ToStr(err) => write!(f, "{}", err),
             Self::UrlParse(err) => write!(f, "{}", err),
         }

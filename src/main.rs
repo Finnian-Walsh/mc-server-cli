@@ -7,6 +7,7 @@ mod platforms;
 mod repo;
 mod server;
 mod tmux_interactor;
+mod reqwest_client;
 
 use clap::Parser;
 use cli::*;
@@ -22,8 +23,8 @@ fn main() -> Result<()> {
             tmux_interactor::attach(&session)?;
         }
         Commands::Default { action } => match action {
-            DefaultCommands::Get => println!("{}", config::get_default()?),
-            DefaultCommands::Set { server } => config::set("default", server)?,
+            DefaultCommands::Get => println!("{}", config::get()?.default_server),
+            DefaultCommands::Set { server } => config::get()?.default_server = server,
         },
         Commands::Deploy { server } => {
             let server = unwrap_or_default(server)?;

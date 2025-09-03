@@ -58,7 +58,7 @@ pub fn remove_server_with_confirmation(name: String) -> Result<()> {
             break false;
         }
     } {
-        remove_dir_with_retries(home::get()?.join(config::get("servers")?).join(name))?;
+        remove_dir_with_retries(home::get()?.join(&config::get()?.servers_directory).join(name))?;
     }
     Ok(())
 }
@@ -66,7 +66,7 @@ pub fn remove_server_with_confirmation(name: String) -> Result<()> {
 pub fn init(download_url: Url, platform: Platform, name: Option<String>) -> Result<()> {
     let name = name.unwrap_or_else(|| format!("{:?}-server", platform).to_lowercase());
 
-    let servers_dir = home::get()?.join(config::get("servers")?);
+    let servers_dir = home::get()?.join(&config::get()?.servers_directory);
     let mut server_root_dir = servers_dir.join(&name);
 
     if server_root_dir.exists() {
@@ -83,11 +83,9 @@ pub fn init(download_url: Url, platform: Platform, name: Option<String>) -> Resu
     }
 
     let server_dir = server_root_dir.join("Server");
-
     fs::create_dir_all(&server_dir)?;
 
     println!("Downloading from {}...", download_url);
-
     let response = blocking::get(download_url)?;
 
     let file_name = response

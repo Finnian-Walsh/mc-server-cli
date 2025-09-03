@@ -39,6 +39,8 @@ pub fn get(game_version: Option<String>) -> Result<String> {
         .ok_or_else(|| Error::PlatformsNotFound(String::from("stable installer")))?
         .version;
 
+    println!("getting");
+
     Ok(format!(
         "{}/loader/{}/{}/{}/server/jar",
         BASE_API_URL, game_version, loader_version, installer_version

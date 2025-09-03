@@ -1,5 +1,7 @@
-use super::reqwest_client;
-use crate::error::{Error, Result};
+use crate::{
+    error::{Error, Result},
+    reqwest_client,
+};
 use serde::Deserialize;
 
 static BASE_API_URL: &str = "https://api.papermc.io/v2/projects/paper";

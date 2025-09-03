@@ -1,7 +1,6 @@
 mod fabric;
 mod paper;
-mod purpur;
-mod reqwest_client;
+pub mod purpur;
 
 use crate::Result;
 use clap::ValueEnum;

@@ -30,7 +30,7 @@ fn get_sessions() -> Result<HashSet<String>> {
 pub fn get_servers() -> Result<Vec<String>> {
     let mut servers = vec![];
 
-    for entry in fs::read_dir(home::get()?.join(config::get("servers")?))? {
+    for entry in fs::read_dir(home::get()?.join(&config::get()?.servers_directory))? {
         let entry = entry?;
         servers.push(entry.file_name().to_string_lossy().into_owned());
     }
