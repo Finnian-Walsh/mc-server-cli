@@ -3,7 +3,7 @@ use reqwest::{
     blocking::Client,
     header::{HeaderMap, HeaderValue, USER_AGENT},
 };
-use static_cfg::CONFIG as STATIC_CONFIG;
+use config::STATIC_CONFIG;
 use std::sync::OnceLock;
 
 static CLIENT: OnceLock<Client> = OnceLock::new();
