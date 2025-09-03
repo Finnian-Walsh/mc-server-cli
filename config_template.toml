@@ -1,0 +1,14 @@
+[static_config]
+# For default USER_AGENT header value in reqwest client headers
+contact = "none"
+# Where to store runtime config (local to home)
+dynamic_config_path = ".config/mc-server"
+# The default arguments passed to the java command when the jar is ran
+
+[default_dynamic_config]
+default_java_args = ""
+# The directory where servers are stored and expected to be stored (local to home)
+servers_directory = "Servers"
+# The default server to be deployed or stopped when the cli is used
+default_server = ""
+
