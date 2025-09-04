@@ -78,8 +78,9 @@ where
     fn from(config: &DynamicConfig<&'static str>) -> Self {
         Ok(DynamicConfig::<String> {
             default_java_args: config.default_java_args.to_string(),
-            servers_directory: shellexpand::full(config.servers_directory)?.to_string(),
+            servers_directory: config.servers_directory.to_string(),
             default_server: config.default_server.to_string(),
         })
     }
 }
+

@@ -1,6 +1,5 @@
 use crate::{
     error::{Error, Mutexes, Result},
-    home,
 };
 use config::{DEFAULT_DYNAMIC_CONFIG, DynamicConfig, STATIC_CONFIG};
 use std::{
@@ -17,6 +16,12 @@ struct AutoConfig {
 }
 
 impl AutoConfig {
+    const fn new() -> Self {
+        Self {
+            value: OnceLock::new(),
+        }
+    }
+
     fn write(&self) -> Result<()> {
         let Some(mutex) = self.get() else {
             return Ok(());
@@ -46,20 +51,22 @@ impl Drop for AutoConfig {
     }
 }
 
-static CONFIG: AutoConfig = AutoConfig {
-    value: OnceLock::new(),
-};
+static CONFIG: AutoConfig = AutoConfig::new();
 
 static CONFIG_DIRECTORY: OnceLock<PathBuf> = OnceLock::new();
 static CONFIG_FILE: OnceLock<PathBuf> = OnceLock::new();
+
+static EXPANDED_SERVERS_DIR: OnceLock<PathBuf> = OnceLock::new();
 
 fn get_config_directory() -> Result<&'static Path> {
     if let Some(path) = CONFIG_DIRECTORY.get() {
         return Ok(path.as_path());
     }
 
-    let path = home::get()?.join(STATIC_CONFIG.dynamic_config_path);
-    Ok(CONFIG_DIRECTORY.get_or_init(|| path).as_path())
+    let path = shellexpand::full(STATIC_CONFIG.dynamic_config_path)?;
+    Ok(CONFIG_DIRECTORY
+        .get_or_init(|| PathBuf::from(&*path))
+        .as_path())
 }
 
 fn get_config_file() -> Result<&'static Path> {
@@ -85,14 +92,23 @@ pub fn get() -> Result<MutexGuard<'static, DynamicConfig<String>>> {
     } else {
         fs::create_dir_all(config_dir)?;
         fs::write(config_file, toml::to_string(&DEFAULT_DYNAMIC_CONFIG)?)?;
-        let result: Result<DynamicConfig<String>> = (&DEFAULT_DYNAMIC_CONFIG).into();
-        result?
+        <&DynamicConfig<&str> as Into<Result<_>>>::into(&DEFAULT_DYNAMIC_CONFIG)?
     };
-    
+
     CONFIG
         .get_or_init(|| Mutex::new(config))
         .lock()
         .map_err(|_| Error::Poison(Mutexes::Config))
+}
+
+pub fn get_expanded_servers_dir() -> Result<&'static Path> {
+    if let Some(dir) = EXPANDED_SERVERS_DIR.get() {
+        return Ok(dir.as_path());
+    }
+
+    let config = get()?;
+    let dir = shellexpand::full(&config.servers_directory)?;
+    Ok(EXPANDED_SERVERS_DIR.get_or_init(|| PathBuf::from(&*dir)).as_path())
 }
 
 pub fn unwrap_or_default<'a>(server: Option<String>) -> Result<String> {
