@@ -1,12 +1,9 @@
 use config::{DynamicConfig, StaticConfig};
-use std::{
-    env, fs, io,
-    path::PathBuf,
-};
-use thiserror::Error;
-use toml;
 use quote::quote;
 use serde::Deserialize;
+use std::{env, fs, io, path::PathBuf};
+use thiserror::Error;
+use toml;
 
 #[derive(Debug, Error)]
 enum Error {
@@ -28,7 +25,10 @@ struct Config {
 
 fn main() -> Result<(), Error> {
     let cargo_manifest_dir = PathBuf::new().join(env::var("CARGO_MANIFEST_DIR")?);
-    let cfg_generation_file = &cargo_manifest_dir.join("config").join("src").join("generated_cfg.rs");
+    let cfg_generation_file = &cargo_manifest_dir
+        .join("config")
+        .join("src")
+        .join("generated_cfg.rs");
     println!("cargo:rerun-if-changed={}", cfg_generation_file.display());
 
     let config_path = cargo_manifest_dir.join("config.toml");
@@ -38,7 +38,12 @@ fn main() -> Result<(), Error> {
         if !config_path.is_file() {
             println!(
                 "cargo:warning=static configuration ({}) should be a file - the default static configuration will be used",
-                config_path.components().last().map(|c| format!("{:?}", c)).unwrap_or_else(|| String::from("unknown")));
+                config_path
+                    .components()
+                    .last()
+                    .map(|c| format!("{:?}", c))
+                    .unwrap_or_else(|| String::from("unknown"))
+            );
             return Ok(());
         }
 

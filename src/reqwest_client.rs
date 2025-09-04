@@ -1,9 +1,9 @@
-use crate::{error::Result};
+use crate::error::Result;
+use config::STATIC_CONFIG;
 use reqwest::{
     blocking::Client,
     header::{HeaderMap, HeaderValue, USER_AGENT},
 };
-use config::STATIC_CONFIG;
 use std::sync::OnceLock;
 
 static CLIENT: OnceLock<Client> = OnceLock::new();

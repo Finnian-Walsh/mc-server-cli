@@ -5,9 +5,9 @@ mod error;
 mod home;
 mod platforms;
 mod repo;
+mod reqwest_client;
 mod server;
 mod tmux_interactor;
-mod reqwest_client;
 
 use clap::Parser;
 use cli::*;

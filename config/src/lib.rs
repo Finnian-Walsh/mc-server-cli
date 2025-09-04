@@ -1,7 +1,9 @@
 use cfg_if::cfg_if;
-use quote::{ToTokens, quote};
-use serde::{Serialize, Deserialize};
 use proc_macro2::TokenStream;
+use quote::{ToTokens, quote};
+use serde::{Deserialize, Serialize};
+use shellexpand;
+use std::env;
 
 cfg_if! {
     if #[cfg(config_generated)] {
@@ -9,15 +11,15 @@ cfg_if! {
 
         pub use generated_cfg::STATIC_CONFIG;
         pub use generated_cfg::DEFAULT_DYNAMIC_CONFIG;
-    } else {        
+    } else {
         pub const STATIC_CONFIG: StaticConfig = StaticConfig {
             contact: "none",
-            dynamic_config_path: ".config/mc-server",
+            dynamic_config_path: "~/.config/mc-server",
         };
 
         pub const DEFAULT_DYNAMIC_CONFIG: DynamicConfig = DynamicConfig {
             default_java_args: "",
-            servers_directory: "Servers",
+            servers_directory: "~/Servers",
             default_server: "",
         };
     }
@@ -69,12 +71,15 @@ impl ToTokens for DynamicConfig<String> {
     }
 }
 
-impl From<&DynamicConfig<&'static str>> for DynamicConfig<String> {
+impl<E> From<&DynamicConfig<&'static str>> for Result<DynamicConfig<String>, E>
+where
+    E: From<shellexpand::LookupError<env::VarError>>,
+{
     fn from(config: &DynamicConfig<&'static str>) -> Self {
-        Self {
+        Ok(DynamicConfig::<String> {
             default_java_args: config.default_java_args.to_string(),
-            servers_directory: config.servers_directory.to_string(),
+            servers_directory: shellexpand::full(config.servers_directory)?.to_string(),
             default_server: config.default_server.to_string(),
-        }
+        })
     }
 }

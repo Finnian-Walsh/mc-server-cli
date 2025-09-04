@@ -13,7 +13,6 @@ use toml;
 
 struct AutoConfig {
     // type ValueType = OnceLock<Mutex<DynamicConfig<String>>>;
-
     value: <Self as Deref>::Target,
 }
 
@@ -48,7 +47,7 @@ impl Drop for AutoConfig {
 }
 
 static CONFIG: AutoConfig = AutoConfig {
-    value: OnceLock::new()
+    value: OnceLock::new(),
 };
 
 static CONFIG_DIRECTORY: OnceLock<PathBuf> = OnceLock::new();
@@ -56,7 +55,7 @@ static CONFIG_FILE: OnceLock<PathBuf> = OnceLock::new();
 
 fn get_config_directory() -> Result<&'static Path> {
     if let Some(path) = CONFIG_DIRECTORY.get() {
-        return Ok(path.as_path())
+        return Ok(path.as_path());
     }
 
     let path = home::get()?.join(STATIC_CONFIG.dynamic_config_path);
@@ -74,23 +73,28 @@ fn get_config_file() -> Result<&'static Path> {
 
 pub fn get() -> Result<MutexGuard<'static, DynamicConfig<String>>> {
     if let Some(mutex) = CONFIG.get() {
-        return mutex.lock().map_err(|_| Error::Poison(Mutexes::Config))
+        return mutex.lock().map_err(|_| Error::Poison(Mutexes::Config));
     }
 
+    let config_dir = get_config_directory()?;
     let config_file = get_config_file()?;
 
     let config: DynamicConfig<String> = if config_file.exists() {
         let toml_string = fs::read_to_string(config_file)?;
         toml::from_str(&toml_string)?
     } else {
+        fs::create_dir_all(config_dir)?;
         fs::write(config_file, toml::to_string(&DEFAULT_DYNAMIC_CONFIG)?)?;
-        (&DEFAULT_DYNAMIC_CONFIG).into()
+        let result: Result<DynamicConfig<String>> = (&DEFAULT_DYNAMIC_CONFIG).into();
+        result?
     };
-
-    CONFIG.get_or_init(|| Mutex::new(config)).lock().map_err(|_| Error::Poison(Mutexes::Config))
+    
+    CONFIG
+        .get_or_init(|| Mutex::new(config))
+        .lock()
+        .map_err(|_| Error::Poison(Mutexes::Config))
 }
 
 pub fn unwrap_or_default<'a>(server: Option<String>) -> Result<String> {
-   server.map_or_else(|| Ok(get()?.default_server.clone()), |val| Ok(val))
+    server.map_or_else(|| Ok(get()?.default_server.clone()), |val| Ok(val))
 }
-

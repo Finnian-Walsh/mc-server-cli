@@ -58,17 +58,21 @@ pub fn remove_server_with_confirmation(name: String) -> Result<()> {
             break false;
         }
     } {
-        remove_dir_with_retries(home::get()?.join(&config::get()?.servers_directory).join(name))?;
+        remove_dir_with_retries(
+            home::get()?
+                .join(&config::get()?.servers_directory)
+                .join(name),
+        )?;
     }
     Ok(())
 }
 
 pub fn init(download_url: Url, platform: Platform, name: Option<String>) -> Result<()> {
     let name = name.unwrap_or_else(|| format!("{:?}-server", platform).to_lowercase());
-
     let servers_dir = home::get()?.join(&config::get()?.servers_directory);
+    
     let mut server_root_dir = servers_dir.join(&name);
-
+    
     if server_root_dir.exists() {
         let mut number = 2;
 

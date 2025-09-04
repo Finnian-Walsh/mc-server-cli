@@ -1,5 +1,7 @@
 use reqwest::header;
+use shellexpand;
 use std::{
+    env,
     fmt::{self, Display, Formatter},
     io,
     path::PathBuf,
@@ -25,6 +27,7 @@ pub enum Error {
     PlatformsNotFound(String),
     Poison(Mutexes),
     Reqwest(#[from] reqwest::Error),
+    ShellexpandLookup(#[from] shellexpand::LookupError<env::VarError>),
     TomlDeserialize(#[from] toml::de::Error),
     TomlSerialize(#[from] toml::ser::Error),
     ToStr(#[from] header::ToStrError),
@@ -54,6 +57,7 @@ impl Display for Error {
             Self::PlatformsNotFound(value) => write!(f, "Platforms not found: {}", value),
             Self::Poison(mutex) => write!(f, "Mutex {} is poisoned", mutex),
             Self::Reqwest(err) => write!(f, "{}", err),
+            Self::ShellexpandLookup(err) => write!(f, "{}", err),
             Self::TomlDeserialize(err) => write!(f, "{}", err),
             Self::TomlSerialize(err) => write!(f, "{}", err),
             Self::ToStr(err) => write!(f, "{}", err),
