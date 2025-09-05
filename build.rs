@@ -1,7 +1,11 @@
 use config::{DynamicConfig, StaticConfig};
 use quote::quote;
 use serde::Deserialize;
-use std::{env, fs, io, path::PathBuf};
+use shellexpand;
+use std::{
+    env, fs, io,
+    path::{Path, PathBuf},
+};
 use thiserror::Error;
 use toml;
 
@@ -11,7 +15,13 @@ enum Error {
     Io(#[from] io::Error),
 
     #[error(transparent)]
-    Toml(#[from] toml::de::Error),
+    ShellexpandLookup(#[from] shellexpand::LookupError<env::VarError>),
+
+    #[error(transparent)]
+    TomlDe(#[from] toml::de::Error),
+
+    #[error(transparent)]
+    TomlSer(#[from] toml::ser::Error),
 
     #[error(transparent)]
     Var(#[from] env::VarError),
@@ -58,6 +68,24 @@ fn main() -> Result<(), Error> {
         };
 
         fs::write(cfg_generation_file, tokens.to_string())?;
+
+        let expanded_dynamic_config_dir = shellexpand::full(&static_config.dynamic_config_path)?;
+        let dynamic_config_path = Path::new(&*expanded_dynamic_config_dir).join("config.toml");
+
+        if dynamic_config_path.exists() {
+            if !dynamic_config_path.is_file() {
+                println!(
+                    "cargo:warning=There is something at the path where the dynamic configuration is supposed to exist; this will cause problems in the future"
+                );
+            }
+
+            return Ok(());
+        } else {
+            fs::write(
+                dynamic_config_path,
+                toml::to_string(&default_dynamic_config)?,
+            )?;
+        }
 
         println!("cargo:rustc-cfg=config_generated");
     }
