@@ -1,6 +1,4 @@
-use crate::{
-    error::{Error, Mutexes, Result},
-};
+use crate::error::{Error, Mutexes, Result};
 use config::{DEFAULT_DYNAMIC_CONFIG, DynamicConfig, STATIC_CONFIG};
 use std::{
     fs,
@@ -108,7 +106,9 @@ pub fn get_expanded_servers_dir() -> Result<&'static Path> {
 
     let config = get()?;
     let dir = shellexpand::full(&config.servers_directory)?;
-    Ok(EXPANDED_SERVERS_DIR.get_or_init(|| PathBuf::from(&*dir)).as_path())
+    Ok(EXPANDED_SERVERS_DIR
+        .get_or_init(|| PathBuf::from(&*dir))
+        .as_path())
 }
 
 pub fn unwrap_or_default<'a>(server: Option<String>) -> Result<String> {
