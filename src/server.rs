@@ -69,7 +69,7 @@ pub fn remove_server_with_confirmation(name: String) -> Result<()> {
 
 pub fn init(download_url: Url, platform: Platform, name: Option<String>) -> Result<()> {
     let name = name.unwrap_or_else(|| format!("{:?}-server", platform).to_lowercase());
-    let servers_dir = home::get()?.join(&config::get_expanded_servers_dir()?);
+    let servers_dir = &config::get_expanded_servers_dir()?;
 
     let mut server_root_dir = servers_dir.join(&name);
 
@@ -109,3 +109,21 @@ pub fn init(download_url: Url, platform: Platform, name: Option<String>) -> Resu
 
     Ok(())
 }
+
+pub fn get_all() -> Result<Vec<String>> {
+    let mut servers = vec![];
+
+    let servers_dir = config::get_expanded_servers_dir()?;
+
+    if !servers_dir.exists() || !servers_dir.is_dir() {
+        return Err(Error::MissingDirectory(Some(servers_dir.to_path_buf())));
+    }
+
+    for entry in fs::read_dir(servers_dir)? {
+        let entry = entry?;
+        servers.push(entry.file_name().to_string_lossy().into_owned());
+    }
+
+    Ok(servers)
+}
+
