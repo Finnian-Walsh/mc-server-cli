@@ -1,7 +1,6 @@
 use crate::{
     config,
     error::{Error, Result},
-    home,
 };
 use std::{
     fs,
@@ -9,8 +8,7 @@ use std::{
 };
 
 fn get_server_dir(server: &str) -> Result<PathBuf> {
-    let server_dir = home::get()?
-        .join(&config::get()?.servers_directory)
+    let server_dir = config::get_expanded_servers_dir()?
         .join(server)
         .join("Server");
 
