@@ -19,7 +19,10 @@ pub enum Mutexes {
 
 #[derive(Debug, Error)]
 pub enum Error {
-    CommandFailure { code: Option<i32>, stderr: Vec<u8> },
+    CommandFailure {
+        code: Option<i32>,
+        stderr: Option<Vec<u8>>,
+    },
     InvalidHeaderValue(#[from] header::InvalidHeaderValue),
     Io(#[from] io::Error),
     MissingDirectory(Option<PathBuf>),
@@ -39,10 +42,14 @@ impl Display for Error {
         match self {
             Self::CommandFailure { code, stderr } => write!(
                 f,
-                "Command faile with code {}: {}",
-                code.map(|c| c.to_string())
-                    .unwrap_or_else(|| String::from("none")),
-                String::from_utf8_lossy(stderr)
+                "Command failed with code {}{}",
+                code.map(|c| c.to_string()).as_deref()
+                    .unwrap_or("none"),
+                stderr
+                    .as_ref()
+                    .map(|err| format!(": {}", String::from_utf8_lossy(err)))
+                    .as_deref()
+                    .unwrap_or("")
             ),
             Self::InvalidHeaderValue(err) => write!(f, "{}", err),
             Self::Io(err) => write!(f, "{}", err),
