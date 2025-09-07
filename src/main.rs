@@ -7,64 +7,73 @@ mod platforms;
 mod repo;
 mod reqwest_client;
 mod server;
-mod tmux_interactor;
+mod zellij;
 
 use clap::Parser;
 use cli::*;
+use color_eyre::eyre::{Result, WrapErr};
 use config::unwrap_or_default;
-use error::Result;
 
 fn main() -> Result<()> {
+    color_eyre::install()?;
     let args = Cli::parse();
 
     match args.command {
-        Commands::Attach { session } => {
-            let session = unwrap_or_default(session)?;
-            tmux_interactor::attach(&session)?;
-        }
+        Commands::Attach { session } => zellij::attach(unwrap_or_default_wrapped!(session)?)
+            .wrap_err("Failed to attach to zellij session")?,
         Commands::Default { action } => match action {
             DefaultCommands::Get => println!("{}", config::get()?.default_server),
             DefaultCommands::Set { server } => config::get()?.default_server = server,
         },
         Commands::Deploy { server } => {
-            let server = unwrap_or_default(server)?;
-            tmux_interactor::new(Some(&server), Some(&deployment::get_command(&server)?))?;
+            let server = unwrap_or_default_wrapped!(server)?;
+            zellij::new(&server, Some(&deployment::get_command(&server)?))?;
         }
         Commands::Execute { server, command } => {
-            let server = unwrap_or_default(server)?;
-            tmux_interactor::execute(server, command)?;
+            let server = unwrap_or_default_wrapped!(server)?;
+            zellij::write_line(&server, command.join(" ")).wrap_err(format!(
+                "Failed to write line to zellij session: {}",
+                &server
+            ))?;
         }
         Commands::List { active, inactive } => {
-            if active {
-                if inactive {
-                    eprintln!("Cannot output");
-                    return Ok(());
-                }
+            let mut servers = server::get_all().wrap_err("Failed to get servers")?;
 
-                println!("{}", tmux_interactor::get_active_servers()?.join("\n"));
+            if active {
+                zellij::retain_active(&mut servers).wrap_err("Failed to retain active servers")?;
             } else if inactive {
-                println!("{}", tmux_interactor::get_inactive_servers()?.join("\n"));
+                zellij::retain_inactive(&mut servers)
+                    .wrap_err("Failed to retain inactive servers")?;
             } else {
-                println!("{}", tmux_interactor::get_servers()?.join("\n"));
+                zellij::tag_active(&mut servers).wrap_err("Failed to tag active servers")?;
             }
+
+            println!("{}", servers.join("\n"));
         }
         Commands::New {
             platform,
             version,
             name,
-        } => {
-            server::init(platforms::get(platform, version)?, platform, name)?;
-        }
+        } => server::init(
+            platforms::get(platform, version)
+                .wrap_err(format!("Failed to get {:?} download url", platform))?,
+            platform,
+            name,
+        )
+        .wrap_err(format!("Failed to initialize {:?} server", platform))?,
         Commands::Stop { server } => {
-            let server = unwrap_or_default(server)?;
-            tmux_interactor::execute(server, "stop")?;
+            zellij::write_chars(unwrap_or_default_wrapped!(server)?, "stop")
+                .wrap_err("Failed to write chars to zellij session")?
         }
-        Commands::Remove { server } => server::remove_server_with_confirmation(server)?,
+        Commands::Remove { server } => {
+            server::remove_server_with_confirmation(server).wrap_err("Failed to remove server")?
+        }
         Commands::Update { git, commit, path } => {
             if let Some(path) = path {
-                repo::update_with_path(path)?;
+                repo::update_with_path(&path)
+                    .wrap_err(format!("Failed to update package with {}", path.display()))?;
             } else if git {
-                repo::update_with_git(commit)?;
+                repo::update_with_git(commit).wrap_err("Failed to update package with git repo")?;
             } else {
                 unreachable!("Clap ensures git or some is provided");
             }
