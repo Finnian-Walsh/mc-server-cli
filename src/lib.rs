@@ -3,6 +3,6 @@ mod error;
 pub mod home;
 pub mod platforms;
 mod reqwest_client;
-pub mod tmux_interactor;
+pub mod zellij;
 
 pub use error::{Error, Result};
