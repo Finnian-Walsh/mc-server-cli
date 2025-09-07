@@ -31,11 +31,11 @@ pub enum Commands {
 
     #[command(visible_alias = "exec", about = "Execute a command on a server")]
     Execute {
-        #[arg()]
-        command: String,
-
-        #[arg()]
+        #[arg(short, long)]
         server: Option<String>,
+
+        #[arg(trailing_var_arg = true)]
+        command: Vec<String>,
     },
 
     #[command(visible_alias = "stp", about = "Stop a server")]
@@ -58,11 +58,11 @@ pub enum Commands {
         #[clap(value_enum)]
         platform: platforms::Platform,
 
-        #[arg()]
-        version: Option<String>,
-
-        #[arg()]
+        #[arg(short, long)]
         name: Option<String>,
+
+        #[arg(short, long)]
+        version: Option<String>,
     },
 
     #[command(visible_alias = "rm", visible_aliases = ["del"], about = "Remove a server")]
