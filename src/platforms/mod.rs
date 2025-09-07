@@ -16,6 +16,8 @@ pub enum Platform {
 }
 
 pub fn get(platform: Platform, version: Option<String>) -> Result<Url> {
+    let version = version.filter(|v| v != "latest");
+
     let download_url = match platform {
         Platform::Fabric => fabric::get(version)?,
         Platform::Forge => todo!(),
