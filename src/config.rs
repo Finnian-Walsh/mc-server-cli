@@ -111,6 +111,13 @@ pub fn get_expanded_servers_dir() -> Result<&'static Path> {
         .as_path())
 }
 
-pub fn unwrap_or_default<'a>(server: Option<String>) -> Result<String> {
+pub fn unwrap_or_default(server: Option<String>) -> Result<String> {
     server.map_or_else(|| Ok(get()?.default_server.clone()), |val| Ok(val))
+}
+
+#[macro_export]
+macro_rules! unwrap_or_default_wrapped {
+    ($server:expr) => {
+        unwrap_or_default($server).wrap_err("Failed to get default server")
+    };
 }
