@@ -1,5 +1,5 @@
 use const_format::formatcp;
-use std::{io, path::PathBuf, process::Command};
+use std::{ffi::OsStr, io, process::Command};
 
 pub static REPO_OWNER: &str = "Finnian-Walsh";
 pub static REPO_NAME: &str = "mc-server-cli";
@@ -21,7 +21,7 @@ pub fn update_with_git(commit: Option<String>) -> io::Result<()> {
     Ok(())
 }
 
-pub fn update_with_path(path: PathBuf) -> io::Result<()> {
+pub fn update_with_path<P: AsRef<OsStr>>(path: P) -> io::Result<()> {
     Command::new("cargo")
         .arg("install")
         .arg("--path")
