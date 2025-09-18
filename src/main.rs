@@ -21,6 +21,10 @@ fn main() -> Result<()> {
     match args.command {
         Commands::Attach { session } => zellij::attach(unwrap_or_default_wrapped!(session)?)
             .wrap_err("Failed to attach to zellij session")?,
+        Commands::Config { config_type } => match config_type {
+            ConfigType::Static => println!("{:?}", config::get_static()),
+            ConfigType::Dynamic => println!("{:?}", config::get()?),
+        },
         Commands::Default { action } => match action {
             DefaultCommands::Get => println!("{}", config::get()?.default_server),
             DefaultCommands::Set { server } => config::get()?.default_server = server,

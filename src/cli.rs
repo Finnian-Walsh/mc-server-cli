@@ -17,6 +17,12 @@ pub enum Commands {
         session: Option<String>,
     },
 
+    #[command(visible_alias = "conf", about = "Query the configuration")]
+    Config {
+        #[command(subcommand)]
+        config_type: ConfigType,
+    },
+
     #[command(visible_alias = "def", about = "Set or get the default server")]
     Default {
         #[command(subcommand)]
@@ -88,6 +94,15 @@ pub enum Commands {
         #[arg(short, long)]
         path: Option<PathBuf>,
     },
+}
+
+#[derive(Subcommand)]
+pub enum ConfigType {
+    #[command()]
+    Static,
+
+    #[command()]
+    Dynamic,
 }
 
 #[derive(Subcommand)]
