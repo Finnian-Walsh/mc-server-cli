@@ -43,8 +43,7 @@ impl Display for Error {
             Self::CommandFailure { code, stderr } => write!(
                 f,
                 "Command failed with code {}{}",
-                code.map(|c| c.to_string()).as_deref()
-                    .unwrap_or("none"),
+                code.map(|c| c.to_string()).as_deref().unwrap_or("none"),
                 stderr
                     .as_ref()
                     .map(|err| format!(": {}", String::from_utf8_lossy(err)))
