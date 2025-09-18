@@ -63,6 +63,9 @@ pub fn remove_server_with_confirmation(name: String) -> Result<()> {
                 .join(&config::get_expanded_servers_dir()?)
                 .join(name),
         )?;
+        println!("Server successfully removed");
+    } else {
+        println!("Operation canceled");
     }
     Ok(())
 }
@@ -126,4 +129,3 @@ pub fn get_all() -> Result<Vec<String>> {
 
     Ok(servers)
 }
-
