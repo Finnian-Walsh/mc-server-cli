@@ -1,31 +1,13 @@
+use color_eyre::eyre::{Result, WrapErr};
 use config::{DynamicConfig, StaticConfig};
 use quote::quote;
 use serde::Deserialize;
 use shellexpand;
 use std::{
-    env, fs, io,
+    env, fs,
     path::{Path, PathBuf},
 };
-use thiserror::Error;
 use toml;
-
-#[derive(Debug, Error)]
-enum Error {
-    #[error(transparent)]
-    Io(#[from] io::Error),
-
-    #[error(transparent)]
-    ShellexpandLookup(#[from] shellexpand::LookupError<env::VarError>),
-
-    #[error(transparent)]
-    TomlDe(#[from] toml::de::Error),
-
-    #[error(transparent)]
-    TomlSer(#[from] toml::ser::Error),
-
-    #[error(transparent)]
-    Var(#[from] env::VarError),
-}
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -33,7 +15,9 @@ struct Config {
     default_dynamic_config: DynamicConfig<String>,
 }
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<()> {
+    color_eyre::install()?;
+
     let cargo_manifest_dir = PathBuf::new().join(env::var("CARGO_MANIFEST_DIR")?);
     let cfg_generation_file = &cargo_manifest_dir
         .join("config")
@@ -57,7 +41,11 @@ fn main() -> Result<(), Error> {
             return Ok(());
         }
 
-        let config: Config = toml::from_str(&fs::read_to_string(config_path)?)?;
+        let config: Config = toml::from_str(
+            &fs::read_to_string(config_path).wrap_err("Failed to read configuration file")?,
+        )
+        .wrap_err("Failed to parse configuration file")?;
+
         let static_config = config.static_config;
         let default_dynamic_config = config.default_dynamic_config;
 
@@ -82,9 +70,16 @@ fn main() -> Result<(), Error> {
             return Ok(());
         } else {
             fs::write(
-                dynamic_config_path,
-                toml::to_string(&default_dynamic_config)?,
-            )?;
+                &dynamic_config_path,
+                toml::to_string(&default_dynamic_config)
+                    .wrap_err("Failed to serialize dynamic configuration")?,
+            )
+            .wrap_err_with(|| {
+                format!(
+                    "Failed to write to the dynamic configuration path ({:?})",
+                    &dynamic_config_path
+                )
+            })?;
         }
 
         println!("cargo:rustc-cfg=config_generated");
