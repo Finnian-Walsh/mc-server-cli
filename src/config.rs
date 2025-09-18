@@ -1,5 +1,5 @@
 use crate::error::{Error, Mutexes, Result};
-use config::{DEFAULT_DYNAMIC_CONFIG, DynamicConfig, STATIC_CONFIG};
+use config::{DEFAULT_DYNAMIC_CONFIG, DynamicConfig, STATIC_CONFIG, StaticConfig};
 use std::{
     fs,
     ops::Deref,
@@ -74,6 +74,10 @@ fn get_config_file() -> Result<&'static Path> {
 
     let path = get_config_directory()?.join("config.toml");
     Ok(CONFIG_FILE.get_or_init(|| path).as_path())
+}
+
+pub fn get_static() -> &'static StaticConfig {
+    return &STATIC_CONFIG;
 }
 
 pub fn get() -> Result<MutexGuard<'static, DynamicConfig<String>>> {
