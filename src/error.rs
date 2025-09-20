@@ -1,75 +1,68 @@
 use reqwest::header;
 use shellexpand;
-use std::{
-    env,
-    fmt::{self, Display, Formatter},
-    io,
-    path::PathBuf,
-    result,
-};
+use std::{env, io, path::PathBuf, result};
 use thiserror::Error;
 use toml;
 use url;
 
 #[derive(Debug, Error)]
-pub enum Mutexes {
+pub enum GlobalMutex {
     #[error("CONFIG")]
     Config,
 }
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error(
+        "Command failed with code {}{}",
+        code.map(|c| c.to_string()).as_deref().unwrap_or("none"),
+        stderr
+            .as_ref()
+            .map(|err| format!(": {}", String::from_utf8_lossy(err)))
+            .as_deref()
+            .unwrap_or("")
+    )]
     CommandFailure {
         code: Option<i32>,
         stderr: Option<Vec<u8>>,
     },
+
+    #[error(transparent)]
     InvalidHeaderValue(#[from] header::InvalidHeaderValue),
+
+    #[error(transparent)]
     Io(#[from] io::Error),
-    MissingDirectory(Option<PathBuf>),
-    MissingFile(Option<PathBuf>),
+
+    #[error("Missing directory: {}", dir.display())]
+    MissingDirectory { dir: PathBuf },
+
+    #[error("Missing file: {}", file.display())]
+    MissingFile { file: PathBuf },
+
+    #[error("Platforms not found: {0}")]
     PlatformsNotFound(String),
-    Poison(Mutexes),
+
+    #[error("Mutex {0} is poisoned")]
+    GlobalMutexPoisoned(GlobalMutex),
+
+    #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
+
+    #[error(transparent)]
     ShellexpandLookup(#[from] shellexpand::LookupError<env::VarError>),
+
+    #[error(transparent)]
     TomlDeserialize(#[from] toml::de::Error),
+
+    #[error(transparent)]
     TomlSerialize(#[from] toml::ser::Error),
+
+    #[error(transparent)]
     ToStr(#[from] header::ToStrError),
+
+    #[error(transparent)]
     UrlParse(#[from] url::ParseError),
 }
 
-impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::CommandFailure { code, stderr } => write!(
-                f,
-                "Command failed with code {}{}",
-                code.map(|c| c.to_string()).as_deref().unwrap_or("none"),
-                stderr
-                    .as_ref()
-                    .map(|err| format!(": {}", String::from_utf8_lossy(err)))
-                    .as_deref()
-                    .unwrap_or("")
-            ),
-            Self::InvalidHeaderValue(err) => write!(f, "{}", err),
-            Self::Io(err) => write!(f, "{}", err),
-            Self::MissingDirectory(dir) => match dir {
-                Some(dir) => write!(f, "Directory {} is missing", dir.display()),
-                None => write!(f, "Missing directory"),
-            },
-            Self::MissingFile(file) => match file {
-                Some(file) => write!(f, "File {} is missing", file.display()),
-                None => write!(f, "Missing file"),
-            },
-            Self::PlatformsNotFound(value) => write!(f, "Platforms not found: {}", value),
-            Self::Poison(mutex) => write!(f, "Mutex {} is poisoned", mutex),
-            Self::Reqwest(err) => write!(f, "{}", err),
-            Self::ShellexpandLookup(err) => write!(f, "{}", err),
-            Self::TomlDeserialize(err) => write!(f, "{}", err),
-            Self::TomlSerialize(err) => write!(f, "{}", err),
-            Self::ToStr(err) => write!(f, "{}", err),
-            Self::UrlParse(err) => write!(f, "{}", err),
-        }
-    }
-}
-
 pub type Result<T> = result::Result<T, Error>;
+

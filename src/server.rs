@@ -119,7 +119,9 @@ pub fn get_all() -> Result<Vec<String>> {
     let servers_dir = config::get_expanded_servers_dir()?;
 
     if !servers_dir.exists() || !servers_dir.is_dir() {
-        return Err(Error::MissingDirectory(Some(servers_dir.to_path_buf())));
+        return Err(Error::MissingDirectory {
+            dir: servers_dir.to_path_buf(),
+        });
     }
 
     for entry in fs::read_dir(servers_dir)? {

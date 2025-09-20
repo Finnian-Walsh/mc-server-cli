@@ -1,4 +1,4 @@
-use crate::error::{Error, Mutexes, Result};
+use crate::error::{Error, GlobalMutex, Result};
 use config::{DEFAULT_DYNAMIC_CONFIG, DynamicConfig, STATIC_CONFIG, StaticConfig};
 use std::{
     fs,
@@ -26,7 +26,7 @@ impl AutoConfig {
         };
 
         fs::create_dir_all(get_config_directory()?)?;
-        let guard = mutex.lock().map_err(|_| Error::Poison(Mutexes::Config))?;
+        let guard = mutex.lock().map_err(|_| Error::GlobalMutexPoisoned(GlobalMutex::Config))?;
         fs::write(get_config_file()?, toml::to_string(&*guard)?)?;
         Ok(())
     }
@@ -82,7 +82,7 @@ pub fn get_static() -> &'static StaticConfig {
 
 pub fn get() -> Result<MutexGuard<'static, DynamicConfig<String>>> {
     if let Some(mutex) = CONFIG.get() {
-        return mutex.lock().map_err(|_| Error::Poison(Mutexes::Config));
+        return mutex.lock().map_err(|_| Error::GlobalMutexPoisoned(GlobalMutex::Config));
     }
 
     let config_dir = get_config_directory()?;
@@ -100,7 +100,7 @@ pub fn get() -> Result<MutexGuard<'static, DynamicConfig<String>>> {
     CONFIG
         .get_or_init(|| Mutex::new(config))
         .lock()
-        .map_err(|_| Error::Poison(Mutexes::Config))
+        .map_err(|_| Error::GlobalMutexPoisoned(GlobalMutex::Config))
 }
 
 pub fn get_expanded_servers_dir() -> Result<&'static Path> {

@@ -13,7 +13,7 @@ fn get_server_dir(server: &str) -> Result<PathBuf> {
         .join("Server");
 
     if !server_dir.is_dir() {
-        return Err(Error::MissingDirectory(Some(server_dir)));
+        return Err(Error::MissingDirectory { dir: server_dir });
     }
 
     Ok(server_dir)
@@ -23,13 +23,13 @@ fn get_server_jar_path(server_dir: &Path) -> Result<PathBuf> {
     let jarfile_txt = server_dir.join("jarfile.txt");
 
     if !jarfile_txt.is_file() {
-        return Err(Error::MissingFile(Some(jarfile_txt)));
+        return Err(Error::MissingFile{ file: jarfile_txt });
     }
 
     let jarfile_path = server_dir.join(fs::read_to_string(jarfile_txt)?.trim_end());
 
     if !jarfile_path.is_file() {
-        return Err(Error::MissingFile(Some(jarfile_path)));
+        return Err(Error::MissingFile{ file: jarfile_path });
     }
 
     Ok(jarfile_path)
