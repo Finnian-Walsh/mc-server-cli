@@ -5,6 +5,8 @@ use std::{
     fmt,
     io::{self, Read},
     process::{Command, Stdio},
+    thread,
+    time::Duration,
 };
 
 static BASE_COMMAND: &str = "zellij";
@@ -90,18 +92,14 @@ pub fn new<N: AsRef<OsStr>, C: AsRef<OsStr>>(name: N, initial_command: Option<C>
     command.arg("--session").arg(&name);
 
     let mut child = command.spawn()?;
-    let status = child.wait()?;
 
-    if !status.success() {
-        return Err(Error::CommandFailure {
-            code: status.code(),
-            stderr: None,
-        });
-    }
+    thread::sleep(Duration::from_millis(300));
 
     if let Some(command) = initial_command {
         write_chars(name, command)?;
     }
+
+    child.wait()?;
 
     Ok(())
 }
