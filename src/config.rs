@@ -26,7 +26,9 @@ impl AutoConfig {
         };
 
         fs::create_dir_all(get_config_directory()?)?;
-        let guard = mutex.lock().map_err(|_| Error::GlobalMutexPoisoned(GlobalMutex::Config))?;
+        let guard = mutex
+            .lock()
+            .map_err(|_| Error::GlobalMutexPoisoned(GlobalMutex::Config))?;
         fs::write(get_config_file()?, toml::to_string(&*guard)?)?;
         Ok(())
     }
@@ -82,7 +84,9 @@ pub fn get_static() -> &'static StaticConfig {
 
 pub fn get() -> Result<MutexGuard<'static, DynamicConfig<String>>> {
     if let Some(mutex) = CONFIG.get() {
-        return mutex.lock().map_err(|_| Error::GlobalMutexPoisoned(GlobalMutex::Config));
+        return mutex
+            .lock()
+            .map_err(|_| Error::GlobalMutexPoisoned(GlobalMutex::Config));
     }
 
     let config_dir = get_config_directory()?;
