@@ -8,7 +8,6 @@ clap = { version = "4.5.46", features = ["derive"] }
 config = { path = "config" }
 const_format = "0.2.34"
 dirs = "6.0.0"
-serde_json = "1.0.143"
 reqwest = { version = "0.12.23", features = ["blocking", "json"] }
 url = "2.5.7"
 serde = "1.0.219"
@@ -16,6 +15,7 @@ toml = "0.9.5"
 shellexpand = "3.1.1"
 color-eyre = "0.6.5"
 thiserror = "2.0.16"
+serde_json = "1.0.145"
 
 [build-dependencies]
 config = { path = "config" }
