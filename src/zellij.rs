@@ -16,21 +16,17 @@ fn get_sessions() -> Result<HashSet<String>> {
         .arg("--short")
         .output()?;
 
-    if !output.status.success() {
-        if output.status.code() == Some(1) {
-            return Ok(HashSet::new());
-        }
-
-        return Err(Error::CommandFailure {
+    match output.status.code() {
+        Some(0) => Ok(String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .map(|l| l.to_string())
+            .collect()),
+        Some(1) => Ok(HashSet::new()),
+        _ => Err(Error::CommandFailure {
             code: output.status.code(),
             stderr: Some(output.stderr),
-        });
+        }),
     }
-
-    Ok(String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .map(|l| l.to_string())
-        .collect())
 }
 
 pub fn retain_active(servers: &mut Vec<String>) -> Result<()> {
