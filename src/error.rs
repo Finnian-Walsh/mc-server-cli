@@ -11,6 +11,7 @@ pub enum GlobalMutex {
     Config,
 }
 
+#[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(
