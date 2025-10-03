@@ -41,7 +41,7 @@ pub enum Commands {
         server: Option<String>,
 
         #[arg(trailing_var_arg = true)]
-        command: Vec<String>,
+        commands: Vec<String>,
     },
 
     #[command(visible_alias = "stp", about = "Stop a server")]
