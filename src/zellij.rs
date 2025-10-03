@@ -17,6 +17,10 @@ fn get_sessions() -> Result<HashSet<String>> {
         .output()?;
 
     if !output.status.success() {
+        if output.status.code() == Some(1) {
+            return Ok(HashSet::new());
+        }
+
         return Err(Error::CommandFailure {
             code: output.status.code(),
             stderr: Some(output.stderr),
