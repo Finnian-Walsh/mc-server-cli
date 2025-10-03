@@ -16,10 +16,11 @@ use config::unwrap_or_default;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
+
     let args = Cli::parse();
 
     match args.command {
-        Commands::Attach { session } => zellij::attach(unwrap_or_default_wrapped!(session)?)
+        Commands::Attach { session } => zellij::attach(unwrap_or_def_server!(session)?)
             .wrap_err("Failed to attach to zellij session")?,
         Commands::Config { config_type } => match config_type {
             ConfigType::Static => println!("{:?}", config::get_static()),
@@ -30,15 +31,14 @@ fn main() -> Result<()> {
             DefaultCommands::Set { server } => config::get()?.default_server = server,
         },
         Commands::Deploy { server } => {
-            let server = unwrap_or_default_wrapped!(server)?;
+            let server = unwrap_or_def_server!(server)?;
             zellij::new(&server, Some(&deployment::get_command(&server)?))?;
         }
-        Commands::Execute { server, command } => {
-            let server = unwrap_or_default_wrapped!(server)?;
-            zellij::write_line(&server, command.join(" ")).wrap_err(format!(
-                "Failed to write line to zellij session: {}",
-                &server
-            ))?;
+        Commands::Execute { server, commands } => {
+            let server = unwrap_or_def_server!(server)?;
+            for command in commands {
+                zellij::write_line(&server, command)?;
+            }
         }
         Commands::List { active, inactive } => {
             let mut servers = server::get_all().wrap_err("Failed to get servers")?;
@@ -66,8 +66,9 @@ fn main() -> Result<()> {
         )
         .wrap_err(format!("Failed to initialize {:?} server", platform))?,
         Commands::Stop { server } => {
-            zellij::write_chars(unwrap_or_default_wrapped!(server)?, "stop")
-                .wrap_err("Failed to write chars to zellij session")?
+            let server = unwrap_or_def_server!(server)?;
+            zellij::write_line(&server, "stop")
+                .wrap_err_with(|| format!("Failed to write stop to server {}", server))?;
         }
         Commands::Remove { server } => {
             server::remove_server_with_confirmation(server).wrap_err("Failed to remove server")?

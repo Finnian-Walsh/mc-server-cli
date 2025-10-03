@@ -124,7 +124,7 @@ pub fn unwrap_or_default(server: Option<String>) -> Result<String> {
 }
 
 #[macro_export]
-macro_rules! unwrap_or_default_wrapped {
+macro_rules! unwrap_or_def_server {
     ($server:expr) => {
         unwrap_or_default($server).wrap_err("Failed to get default server")
     };
