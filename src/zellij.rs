@@ -2,7 +2,6 @@ use crate::error::{Error, Result};
 use std::{
     collections::HashSet,
     ffi::OsStr,
-    fmt,
     io::{self, Read},
     process::{Command, Stdio},
     thread,
@@ -48,8 +47,6 @@ pub fn tag_active(servers: &mut Vec<String>) -> Result<()> {
     servers.iter_mut().for_each(|server| {
         if sessions.contains(server) {
             server.push_str(" (active)");
-        } else {
-            println!("nope");
         }
     });
     Ok(())
@@ -87,6 +84,12 @@ pub fn attach<S: AsRef<OsStr> + for<'a> PartialEq<&'a str>>(session: S) -> Resul
 }
 
 pub fn new<N: AsRef<OsStr>, C: AsRef<OsStr>>(name: N, initial_command: Option<C>) -> Result<()> {
+    Command::new(BASE_COMMAND)
+        .arg("delete-session")
+        .arg(&name)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()?;
     let mut command = Command::new(BASE_COMMAND);
 
     command.arg("--session").arg(&name);
@@ -96,7 +99,7 @@ pub fn new<N: AsRef<OsStr>, C: AsRef<OsStr>>(name: N, initial_command: Option<C>
     thread::sleep(Duration::from_millis(300));
 
     if let Some(command) = initial_command {
-        write_chars(name, command)?;
+        write_line(&name, command)?;
     }
 
     child.wait()?;
@@ -104,7 +107,7 @@ pub fn new<N: AsRef<OsStr>, C: AsRef<OsStr>>(name: N, initial_command: Option<C>
     Ok(())
 }
 
-pub fn write_chars<S, C>(session: S, chars: C) -> Result<()>
+fn session_write<S, C>(session: S, mode: &'static str, chars: C) -> Result<()>
 where
     S: AsRef<OsStr>,
     C: AsRef<OsStr>,
@@ -113,7 +116,7 @@ where
         .arg("--session")
         .arg(session)
         .arg("action")
-        .arg("write-chars")
+        .arg(mode)
         .arg(chars)
         .spawn()?
         .wait()?;
@@ -128,11 +131,20 @@ where
     Ok(())
 }
 
+pub fn write_chars<S, C>(session: S, chars: C) -> Result<()>
+where
+    S: AsRef<OsStr>,
+    C: AsRef<OsStr>,
+{
+    session_write(session, "write-chars", chars)
+}
+
 pub fn write_line<S, C>(session: S, chars: C) -> Result<()>
 where
     S: AsRef<OsStr>,
-    C: AsRef<OsStr> + fmt::Display,
+    C: AsRef<OsStr>,
 {
-    write_chars(session, format!("{}\r", chars))?;
+    write_chars(&session, chars)?;
+    session_write(&session, "write", "13")?;
     Ok(())
 }
