@@ -43,6 +43,10 @@ pub fn get_command(server: &str) -> Result<String> {
         server_dir.to_string_lossy(),
         config.default_java_args,
         get_server_jar_path(&server_dir)?.to_string_lossy(),
-        if config.nogui { String::from(" nogui") } else { String::new() }
+        if config.nogui {
+            String::from(" nogui")
+        } else {
+            String::new()
+        }
     ))
 }
