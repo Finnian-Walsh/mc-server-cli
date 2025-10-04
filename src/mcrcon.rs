@@ -6,13 +6,11 @@ use std::process::Command;
 
 pub fn run(server: String) -> Result<()> {
     let config = config::get()?;
-    let mcrcon_config = config.mcrcon
-        .as_ref()
-        .ok_or(Error::MissingMcrconConfig { field: None })?;
+    let mcrcon_config = &config.mcrcon;
 
     let server_mcrcon_config = mcrcon_config
         .get(&server)
-        .ok_or_else(|| Error::MissingMcrconConfig { field: Some(server) })?;
+        .ok_or_else(|| Error::MissingMcrconConfig(server))?;
 
     let mut command = Command::new("mcrcon");
 
