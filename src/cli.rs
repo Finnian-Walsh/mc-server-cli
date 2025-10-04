@@ -12,10 +12,7 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     #[command(visible_alias = "att", aliases = ["connect", "con"], about = "Attach to a server session")]
-    Attach {
-        #[arg()]
-        session: Option<String>,
-    },
+    Attach { session: Option<String> },
 
     #[command(visible_alias = "conf", about = "Query the configuration")]
     Config {
@@ -30,10 +27,7 @@ pub enum Commands {
     },
 
     #[command(visible_alias = "dpl", visible_aliases = ["start", "st"], about = "Deploy a server")]
-    Deploy {
-        #[arg()]
-        server: Option<String>,
-    },
+    Deploy { server: Option<String> },
 
     #[command(visible_alias = "exec", about = "Execute a command on a server")]
     Execute {
@@ -55,8 +49,9 @@ pub enum Commands {
 
     #[command(about = "Interact with a server, using the minecraft remote console")]
     Mcrcon {
-        #[arg()]
         server: Option<String>,
+
+        commands: Vec<String>,
     },
 
     #[command(about = "Create a new server")]
@@ -72,16 +67,10 @@ pub enum Commands {
     },
 
     #[command(visible_alias = "rm", visible_aliases = ["del"], about = "Remove a server")]
-    Remove {
-        #[arg()]
-        server: String,
-    },
+    Remove { server: String },
 
     #[command(visible_alias = "stp", about = "Stop a server")]
-    Stop {
-        #[arg()]
-        server: Option<String>,
-    },
+    Stop { server: Option<String> },
 
     #[command(visible_aliases = ["up", "upd"], about = "Update the server binary",
         group(
@@ -104,21 +93,14 @@ pub enum Commands {
 
 #[derive(Subcommand)]
 pub enum ConfigType {
-    #[command()]
     Static,
 
-    #[command()]
     Dynamic,
 }
 
 #[derive(Subcommand)]
 pub enum DefaultCommands {
-    #[command()]
     Get,
 
-    #[command()]
-    Set {
-        #[arg()]
-        server: String,
-    },
+    Set { server: String },
 }
