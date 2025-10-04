@@ -104,13 +104,16 @@ impl ToTokens for DynamicConfig {
             pub static DEFAULT_DYNAMIC_CONFIG: OnceLock<DynamicConfig> = OnceLock::new();
 
             pub fn get_default_dynamic_config() -> &'static DynamicConfig {
-                DEFAULT_DYNAMIC_CONFIG.get_or_init(|| )
-                default_java_args: String::from(#default_java_args),
-                servers_directory: String::from(#servers_directory),
-                default_server: String::from(#default_server),
-                mcrcon: HashMap::from([
-                        #(#key_value_pairs),*
-                    ]),
+                DEFAULT_DYNAMIC_CONFIG.get_or_init(||
+                    DynamicConfig {
+                        default_java_args: String::from(#default_java_args),
+                        servers_directory: String::from(#servers_directory),
+                        default_server: String::from(#default_server),
+                        mcrcon: HashMap::from([
+                            #(#key_value_pairs),*
+                        ]),
+                    }
+                )
             }
         });
     }

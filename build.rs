@@ -53,7 +53,7 @@ fn main() -> Result<()> {
             use super::{StaticConfig, DynamicConfig};
             pub const STATIC_CONFIG: StaticConfig = #static_config;
 
-            #default_dynamic_config;
+            #default_dynamic_config
         };
 
         fs::write(cfg_generation_file, tokens.to_string())?;
