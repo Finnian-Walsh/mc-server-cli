@@ -46,6 +46,12 @@ pub enum Error {
     #[error("Mutex {0} is poisoned")]
     GlobalMutexPoisoned(GlobalMutex),
 
+    #[error(
+        "Mcrcon config is missing{}",
+        field.as_ref().map(|s| format!("Field: {}", s)).as_deref().unwrap_or("")
+    )]
+    MissingMcrconConfig { field: Option<String> },
+
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
 
