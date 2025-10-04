@@ -55,8 +55,9 @@ fn main() -> Result<()> {
 
             println!("{}", servers.join("\n"));
         }
-        Commands::Mcrcon { server } => {
-            mcrcon::run(unwrap_or_def_server!(server)?).wrap_err("Failed to run mcrcon command")?
+        Commands::Mcrcon { server, commands } => {
+            mcrcon::run(&unwrap_or_def_server!(server)?, commands)
+                .wrap_err("Failed to run mcrcon command")?
         }
         Commands::New {
             platform,
@@ -71,8 +72,9 @@ fn main() -> Result<()> {
         .wrap_err(format!("Failed to initialize {:?} server", platform))?,
         Commands::Stop { server } => {
             let server = unwrap_or_def_server!(server)?;
-            zellij::write_line(&server, "stop")
-                .wrap_err_with(|| format!("Failed to write stop to server {}", server))?;
+            mcrcon::run(&server, vec!["stop"])
+                .wrap_err_with(|| format!("Failed to stop server {}", &server))?;
+            zellij::kill_session(&server)?;
         }
         Commands::Remove { server } => {
             server::remove_server_with_confirmation(server).wrap_err("Failed to remove server")?

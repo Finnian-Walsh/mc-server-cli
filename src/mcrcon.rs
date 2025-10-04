@@ -2,15 +2,15 @@ use crate::{
     config,
     error::{Error, Result},
 };
-use std::process::Command;
+use std::{ffi::OsStr, process::Command};
 
-pub fn run(server: String) -> Result<()> {
+pub fn run<S: AsRef<OsStr>>(server: &String, commands: Vec<S>) -> Result<()> {
     let config = config::get()?;
     let mcrcon_config = &config.mcrcon;
 
     let server_mcrcon_config = mcrcon_config
-        .get(&server)
-        .ok_or_else(|| Error::MissingMcrconConfig(server))?;
+        .get(server)
+        .ok_or_else(|| Error::MissingMcrconConfig(String::from(server)))?;
 
     let mut command = Command::new("mcrcon");
 
@@ -27,6 +27,10 @@ pub fn run(server: String) -> Result<()> {
     if let Some(password) = &server_mcrcon_config.password {
         command.arg("-p");
         command.arg(password);
+    }
+
+    for arg in commands {
+        command.arg(arg);
     }
 
     command.status()?;
