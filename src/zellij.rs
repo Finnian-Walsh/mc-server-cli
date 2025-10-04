@@ -148,19 +148,3 @@ where
     session_write(&session, "write", "13")?;
     Ok(())
 }
-
-pub fn kill_session<S: AsRef<OsStr>>(session: S) -> Result<()> {
-    let status = Command::new(BASE_COMMAND)
-        .arg("kill-session")
-        .arg(session)
-        .status()?;
-
-    if status.success() {
-        Ok(())
-    } else {
-        Err(Error::CommandFailure {
-            code: status.code(),
-            stderr: None,
-        })
-    }
-}
