@@ -74,7 +74,6 @@ fn main() -> Result<()> {
             let server = unwrap_or_def_server!(server)?;
             mcrcon::run(&server, vec!["stop"])
                 .wrap_err_with(|| format!("Failed to stop server {}", &server))?;
-            zellij::kill_session(&server)?;
         }
         Commands::Remove { server } => {
             server::remove_server_with_confirmation(server).wrap_err("Failed to remove server")?

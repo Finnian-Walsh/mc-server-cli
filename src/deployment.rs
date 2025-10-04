@@ -39,7 +39,7 @@ pub fn get_command(server: &str) -> Result<String> {
     let server_dir = get_server_dir(server)?;
     let config = &config::get()?;
     Ok(format!(
-        "cd {} && java -jar {} {}{}",
+        "cd {} && java -jar {} {}{} && zellij kill-session $ZELLIJ_SESSION_NAME",
         server_dir.to_string_lossy(),
         config.default_java_args,
         get_server_jar_path(&server_dir)?.to_string_lossy(),
