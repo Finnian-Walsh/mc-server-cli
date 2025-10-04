@@ -23,3 +23,9 @@ default_server = "my-server"
 [default_dynamic_config.mcrcon]
 my-server = { server_address = "localhost", port = 25575, password = "abc" }
 
+# Equally, you can do mcron.<server> and customize each field line by line
+[default_dynamic_config.mcron.my-second-server]
+server_address = "localhost"
+port = 25575
+password = "abc"
+
