@@ -1,5 +1,5 @@
 use crate::error::{Error, GlobalMutex, Result};
-use config::{DEFAULT_DYNAMIC_CONFIG, DynamicConfig, STATIC_CONFIG, StaticConfig};
+use config::{DynamicConfig, STATIC_CONFIG, StaticConfig, get_default_dynamic_config};
 use std::{
     fs,
     ops::Deref,
@@ -8,8 +8,8 @@ use std::{
 };
 use toml;
 
-struct AutoConfig {
-    // type ValueType = OnceLock<Mutex<DynamicConfig<String>>>;
+pub struct AutoConfig {
+    // type ValueType = OnceLock<Mutex<DynamicConfig>>;
     value: <Self as Deref>::Target,
 }
 
@@ -20,7 +20,7 @@ impl AutoConfig {
         }
     }
 
-    fn write(&self) -> Result<()> {
+    pub fn ensure_written(&self) -> Result<()> {
         let Some(mutex) = self.get() else {
             return Ok(());
         };
@@ -35,23 +35,14 @@ impl AutoConfig {
 }
 
 impl Deref for AutoConfig {
-    type Target = OnceLock<Mutex<DynamicConfig<String>>>;
+    type Target = OnceLock<Mutex<DynamicConfig>>;
 
     fn deref(&self) -> &Self::Target {
         &self.value
     }
 }
 
-impl Drop for AutoConfig {
-    fn drop(&mut self) {
-        if let Err(err) = self.write() {
-            eprintln!("Failed to write config: {}", err);
-            return;
-        }
-    }
-}
-
-static CONFIG: AutoConfig = AutoConfig::new();
+pub static CONFIG: AutoConfig = AutoConfig::new();
 
 static CONFIG_DIRECTORY: OnceLock<PathBuf> = OnceLock::new();
 static CONFIG_FILE: OnceLock<PathBuf> = OnceLock::new();
@@ -82,7 +73,7 @@ pub fn get_static() -> &'static StaticConfig {
     return &STATIC_CONFIG;
 }
 
-pub fn get() -> Result<MutexGuard<'static, DynamicConfig<String>>> {
+pub fn get() -> Result<MutexGuard<'static, DynamicConfig>> {
     if let Some(mutex) = CONFIG.get() {
         return mutex
             .lock()
@@ -92,13 +83,14 @@ pub fn get() -> Result<MutexGuard<'static, DynamicConfig<String>>> {
     let config_dir = get_config_directory()?;
     let config_file = get_config_file()?;
 
-    let config: DynamicConfig<String> = if config_file.exists() {
+    let config: DynamicConfig = if config_file.exists() {
         let toml_string = fs::read_to_string(config_file)?;
         toml::from_str(&toml_string)?
     } else {
         fs::create_dir_all(config_dir)?;
-        fs::write(config_file, toml::to_string(&DEFAULT_DYNAMIC_CONFIG)?)?;
-        <&DynamicConfig<&str> as Into<Result<_>>>::into(&DEFAULT_DYNAMIC_CONFIG)?
+        let config = get_default_dynamic_config();
+        fs::write(config_file, toml::to_string(config)?)?;
+        config.clone()
     };
 
     CONFIG
