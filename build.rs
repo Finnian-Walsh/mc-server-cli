@@ -12,7 +12,7 @@ use toml;
 #[derive(Debug, Deserialize)]
 struct Config {
     static_config: StaticConfig<String>,
-    default_dynamic_config: DynamicConfig<String>,
+    default_dynamic_config: DynamicConfig,
 }
 
 fn main() -> Result<()> {
@@ -69,6 +69,7 @@ fn main() -> Result<()> {
 
             return Ok(());
         } else {
+            fs::create_dir_all(&*expanded_dynamic_config_dir)?;
             fs::write(
                 &dynamic_config_path,
                 toml::to_string(&default_dynamic_config)
