@@ -3,6 +3,7 @@ mod config;
 mod deployment;
 mod error;
 mod home;
+mod mcrcon;
 mod platforms;
 mod repo;
 mod reqwest_client;
@@ -54,6 +55,9 @@ fn main() -> Result<()> {
 
             println!("{}", servers.join("\n"));
         }
+        Commands::Mcrcon { server } => {
+            mcrcon::run(unwrap_or_def_server!(server)?).wrap_err("Failed to run mcrcon command")?
+        }
         Commands::New {
             platform,
             version,
@@ -84,6 +88,8 @@ fn main() -> Result<()> {
             }
         }
     };
+
+    config::CONFIG.ensure_written()?;
 
     Ok(())
 }

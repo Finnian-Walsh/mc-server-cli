@@ -44,12 +44,6 @@ pub enum Commands {
         commands: Vec<String>,
     },
 
-    #[command(visible_alias = "stp", about = "Stop a server")]
-    Stop {
-        #[arg()]
-        server: Option<String>,
-    },
-
     #[command(visible_alias = "ls", about = "List all, active or inactive servers")]
     List {
         #[arg(short, long, conflicts_with = "inactive")]
@@ -57,6 +51,12 @@ pub enum Commands {
 
         #[arg(short, long, conflicts_with = "active")]
         inactive: bool,
+    },
+
+    #[command(about = "Interact with a server, using the minecraft remote console")]
+    Mcrcon {
+        #[arg()]
+        server: Option<String>,
     },
 
     #[command(about = "Create a new server")]
@@ -75,6 +75,12 @@ pub enum Commands {
     Remove {
         #[arg()]
         server: String,
+    },
+
+    #[command(visible_alias = "stp", about = "Stop a server")]
+    Stop {
+        #[arg()]
+        server: Option<String>,
     },
 
     #[command(visible_aliases = ["up", "upd"], about = "Update the server binary",
