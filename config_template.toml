@@ -10,6 +10,9 @@ dynamic_config_path = "~/.config/mcserver"
 # The default arguments passed to the java command when the jar is ran
 default_java_args = ""
 
+# Whether to use enable nogui when starting the server
+nogui = false
+
 # The directory where servers are stored and expected to be stored (local to home)
 servers_directory = "~/Servers"
 

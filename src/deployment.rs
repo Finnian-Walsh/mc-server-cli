@@ -37,10 +37,12 @@ fn get_server_jar_path(server_dir: &Path) -> Result<PathBuf> {
 
 pub fn get_command(server: &str) -> Result<String> {
     let server_dir = get_server_dir(server)?;
+    let config = &config::get()?;
     Ok(format!(
-        "cd {} && java -jar {} {}",
+        "cd {} && java -jar {} {}{}",
         server_dir.to_string_lossy(),
-        &config::get()?.default_java_args,
-        get_server_jar_path(&server_dir)?.to_string_lossy()
+        config.default_java_args,
+        get_server_jar_path(&server_dir)?.to_string_lossy(),
+        if config.nogui { String::from(" nogui") } else { String::new() }
     ))
 }

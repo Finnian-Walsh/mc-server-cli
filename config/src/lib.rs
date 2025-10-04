@@ -22,6 +22,7 @@ cfg_if! {
             DEFAULT_DYNAMIC_CONFIG.get_or_init(|| {
                 DynamicConfig {
                     default_java_args: String::from(""),
+                    nogui: false,
                     servers_directory: String::from("~/Servers"),
                     default_server: String::from(""),
                     mcrcon: HashMap::new(),
@@ -83,6 +84,7 @@ impl ToTokens for McrconConfig {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DynamicConfig {
     pub default_java_args: String,
+    pub nogui: bool,
     pub servers_directory: String,
     pub default_server: String,
     pub mcrcon: HashMap<String, McrconConfig>,
@@ -91,6 +93,7 @@ pub struct DynamicConfig {
 impl ToTokens for DynamicConfig {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let default_java_args = &self.default_java_args;
+        let nogui = &self.nogui;
         let servers_directory = &self.servers_directory;
         let default_server = &self.default_server;
 
@@ -107,6 +110,7 @@ impl ToTokens for DynamicConfig {
                 DEFAULT_DYNAMIC_CONFIG.get_or_init(||
                     DynamicConfig {
                         default_java_args: String::from(#default_java_args),
+                        nogui: #nogui,
                         servers_directory: String::from(#servers_directory),
                         default_server: String::from(#default_server),
                         mcrcon: HashMap::from([
