@@ -33,7 +33,14 @@ pub fn run<S: AsRef<OsStr>>(server: &String, commands: Vec<S>) -> Result<()> {
         command.arg(arg);
     }
 
-    command.status()?;
+    let status = command.status()?;
 
-    Ok(())
+    if status.success() {
+        Ok(())
+    } else {
+        Err(Error::CommandFailure {
+            code: status.code(),
+            stderr: None,
+        })
+    }
 }
