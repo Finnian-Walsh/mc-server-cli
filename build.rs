@@ -52,7 +52,8 @@ fn main() -> Result<()> {
         let tokens = quote! {
             use super::{StaticConfig, DynamicConfig};
             pub const STATIC_CONFIG: StaticConfig = #static_config;
-            pub const DEFAULT_DYNAMIC_CONFIG: DynamicConfig = #default_dynamic_config;
+
+            #default_dynamic_config;
         };
 
         fs::write(cfg_generation_file, tokens.to_string())?;
