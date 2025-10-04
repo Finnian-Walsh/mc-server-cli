@@ -24,7 +24,7 @@ cfg_if! {
                     default_java_args: String::from(""),
                     servers_directory: String::from("~/Servers"),
                     default_server: String::from(""),
-                    mcrcon: None,
+                    mcrcon: HashMap::new(),
                 }
             })
         }
@@ -64,12 +64,28 @@ pub struct McrconConfig {
     pub password: Option<String>,
 }
 
+impl ToTokens for McrconConfig {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let server_address = &self.server_address;
+        let port = &self.port;
+        let password = &self.password;
+
+        tokens.extend(quote! {
+            McrconConfig {
+                server_address: String::from(#server_address),
+                port: #port,
+                password: String::from(#password),
+            }
+        })
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct DynamicConfig {
     pub default_java_args: String,
     pub servers_directory: String,
     pub default_server: String,
-    pub mcrcon: Option<HashMap<String, McrconConfig>>,
+    pub mcrcon: HashMap<String, McrconConfig>,
 }
 
 impl ToTokens for DynamicConfig {
@@ -78,7 +94,13 @@ impl ToTokens for DynamicConfig {
         let servers_directory = &self.servers_directory;
         let default_server = &self.default_server;
 
+        let key_value_pairs = self.mcrcon.iter().map(|(k, v)| {
+            quote! { (#k, #v )}
+        });
+
         tokens.extend(quote! {
+            use std::collections::HashMap;
+
             pub static DEFAULT_DYNAMIC_CONFIG: OnceLock<DynamicConfig> = OnceLock::new();
 
             pub fn get_default_dynamic_config() -> &'static DynamicConfig {
@@ -86,7 +108,9 @@ impl ToTokens for DynamicConfig {
                 default_java_args: String::from(#default_java_args),
                 servers_directory: String::from(#servers_directory),
                 default_server: String::from(#default_server),
-                mcrcon: None,
+                mcrcon: HashMap::from([
+                        #(#key_value_pairs),*
+                    ]),
             }
         });
     }
