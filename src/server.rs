@@ -1,7 +1,6 @@
 use crate::{
     config,
     error::{Error, Result},
-    home,
     platforms::Platform,
 };
 use reqwest::{blocking, header};
