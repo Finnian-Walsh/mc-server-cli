@@ -26,10 +26,11 @@ fn get_alive_sessions() -> Result<HashSet<String>> {
                 line[bracket_pos..].find("EXITED").is_none() // if there is no "EXITED", still alive
             })
             .map(|line| {
-                let created = line
-                    .rfind("[Created")
-                    .expect("Expected `[Created` in output");
-                String::from(&line[7..=created - 5])
+                match line.rfind("[Created") {
+                    Some(pos) => &line[7..=pos - 5],
+                    None => &line[7..], // unexpected error
+                }
+                .to_string()
             })
             .collect()),
         Some(1) => Ok(HashSet::new()), // no sessions
