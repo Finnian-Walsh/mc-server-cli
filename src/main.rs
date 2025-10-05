@@ -21,7 +21,7 @@ fn main() -> Result<()> {
     let args = Cli::parse();
 
     match args.command {
-        Commands::Attach { session } => zellij::attach(unwrap_or_def_server!(session)?)
+        Commands::Attach { server } => zellij::attach(unwrap_or_def_server!(server)?)
             .wrap_err("Failed to attach to zellij session")?,
         Commands::Config { config_type } => match config_type {
             ConfigType::Static => println!("{:?}", config::get_static()),
