@@ -67,7 +67,12 @@ pub enum Commands {
     },
 
     #[command(visible_alias = "rm", about = "Remove a server")]
-    Remove { server: String },
+    Remove {
+        #[arg(short, long)]
+        force: bool,
+
+        servers: Vec<String>,
+    },
 
     #[command(about = "Stop a server")]
     Stop { server: Option<String> },
