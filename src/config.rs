@@ -135,6 +135,7 @@ pub fn get_current_server_directory() -> Result<String> {
 macro_rules! handle_server_arg {
     ($server:expr) => {{
         use crate::config::{get, get_current_server_directory};
+
         let server = $server
             .map_or_else::<Result<String>, _, _>(
                 || Ok(get()?.default_server.clone()),
