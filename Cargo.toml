@@ -1,6 +1,6 @@
 [package]
 name = "mcserver"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2024"
 
 [dependencies]
@@ -20,7 +20,6 @@ serde_json = "1.0.145"
 [build-dependencies]
 config = { path = "config" }
 quote = "1.0.40"
-proc-macro2 = "1.0.101"
 serde = { version = "1.0.219", features = ["derive"] }
 toml = "0.9.5"
 shellexpand = "3.1.1"
