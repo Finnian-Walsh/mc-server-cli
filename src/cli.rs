@@ -11,8 +11,8 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    #[command(visible_alias = "att", aliases = ["connect", "con"], about = "Attach to a server session")]
-    Attach { session: Option<String> },
+    #[command(visible_alias = "a", about = "Attach to a server session")]
+    Attach { server: Option<String> },
 
     #[command(visible_alias = "conf", about = "Query the configuration")]
     Config {
@@ -26,7 +26,7 @@ pub enum Commands {
         action: DefaultCommands,
     },
 
-    #[command(visible_alias = "dpl", visible_aliases = ["start", "st"], about = "Deploy a server")]
+    #[command(visible_alias = "dpl", about = "Deploy a server")]
     Deploy { server: Option<String> },
 
     #[command(visible_alias = "exec", about = "Execute a command on a server")]
@@ -66,13 +66,13 @@ pub enum Commands {
         version: Option<String>,
     },
 
-    #[command(visible_alias = "rm", visible_aliases = ["del"], about = "Remove a server")]
+    #[command(visible_alias = "rm", about = "Remove a server")]
     Remove { server: String },
 
-    #[command(visible_alias = "stp", about = "Stop a server")]
+    #[command(about = "Stop a server")]
     Stop { server: Option<String> },
 
-    #[command(visible_aliases = ["up", "upd"], about = "Update the server binary",
+    #[command(visible_alias = "up", about = "Update the server binary",
         group(
                 ArgGroup::new("source")
                     .required(true)
