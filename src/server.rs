@@ -50,9 +50,15 @@ pub fn remove_servers(servers: Vec<String>) -> Result<()> {
     let all_servers = get_all_hashed()?;
 
     for server in servers {
+        let server = if server == "." {
+            config::get_current_server_directory()?
+        } else { server };
+
         if all_servers.get(&server).is_none() {
             return Err(Error::NoServerFound(server));
         }
+
+        remove_server(server)?;
     }
 
     Ok(())
