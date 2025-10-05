@@ -1,6 +1,10 @@
 use reqwest::header;
 use shellexpand;
-use std::{env, io, path::PathBuf, result};
+use std::{
+    env, io,
+    path::{self, PathBuf},
+    result,
+};
 use thiserror::Error;
 use toml;
 use url;
@@ -31,6 +35,9 @@ pub enum Error {
     #[error(transparent)]
     InvalidHeaderValue(#[from] header::InvalidHeaderValue),
 
+    #[error("Invalid servers directory")]
+    InvalidServersDirectory,
+
     #[error(transparent)]
     Io(#[from] io::Error),
 
@@ -39,6 +46,9 @@ pub enum Error {
 
     #[error("Missing file: {}", file.display())]
     MissingFile { file: PathBuf },
+
+    #[error("No server found in current directory")]
+    NoServerFound,
 
     #[error("Platforms not found: {0}")]
     PlatformsNotFound(String),
@@ -54,6 +64,9 @@ pub enum Error {
 
     #[error(transparent)]
     ShellexpandLookup(#[from] shellexpand::LookupError<env::VarError>),
+
+    #[error(transparent)]
+    StripPrefix(#[from] path::StripPrefixError),
 
     #[error(transparent)]
     TomlDeserialize(#[from] toml::de::Error),
