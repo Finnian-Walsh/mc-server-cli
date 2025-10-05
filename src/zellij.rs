@@ -10,18 +10,29 @@ use std::{
 
 static BASE_COMMAND: &str = "zellij";
 
-fn get_sessions() -> Result<HashSet<String>> {
-    let output = Command::new(BASE_COMMAND)
-        .arg("list-sessions")
-        .arg("--short")
-        .output()?;
+fn get_alive_sessions() -> Result<HashSet<String>> {
+    let output = Command::new(BASE_COMMAND).arg("list-sessions").output()?;
 
     match output.status.code() {
         Some(0) => Ok(String::from_utf8_lossy(&output.stdout)
+            .to_string()
             .lines()
-            .map(|l| l.to_string())
+            .filter(|line| {
+                let bracket_pos = match line.rfind('(') {
+                    Some(pos) => pos,
+                    None => return true,
+                };
+
+                line[bracket_pos..].find("EXITED").is_none() // if there is no "EXITED", still alive
+            })
+            .map(|line| {
+                let created = line
+                    .rfind("[Created")
+                    .expect("Expected `[Created` in output");
+                String::from(&line[7..=created - 5])
+            })
             .collect()),
-        Some(1) => Ok(HashSet::new()),
+        Some(1) => Ok(HashSet::new()), // no sessions
         _ => Err(Error::CommandFailure {
             code: output.status.code(),
             stderr: Some(output.stderr),
@@ -30,19 +41,19 @@ fn get_sessions() -> Result<HashSet<String>> {
 }
 
 pub fn retain_active(servers: &mut Vec<String>) -> Result<()> {
-    let sessions = get_sessions()?;
+    let sessions = get_alive_sessions()?;
     servers.retain(|server| sessions.contains(server));
     Ok(())
 }
 
 pub fn retain_inactive(servers: &mut Vec<String>) -> Result<()> {
-    let sessions = get_sessions()?;
+    let sessions = get_alive_sessions()?;
     servers.retain(|server| !sessions.contains(server));
     Ok(())
 }
 
 pub fn tag_active(servers: &mut Vec<String>) -> Result<()> {
-    let sessions = get_sessions()?;
+    let sessions = get_alive_sessions()?;
 
     servers.iter_mut().for_each(|server| {
         if sessions.contains(server) {
