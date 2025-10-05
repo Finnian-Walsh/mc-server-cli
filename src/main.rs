@@ -12,7 +12,6 @@ mod zellij;
 use clap::Parser;
 use cli::*;
 use color_eyre::eyre::{Result, WrapErr};
-use config::get_current_server_directory;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -41,7 +40,8 @@ fn main() -> Result<()> {
             }
         }
         Commands::List { active, inactive } => {
-            let mut servers = server::get_all().wrap_err("Failed to get servers")?;
+            let mut servers = vec![];
+            server::for_each(|s| servers.push(s)).wrap_err("Failed to get servers")?;
 
             if active {
                 zellij::retain_active(&mut servers).wrap_err("Failed to retain active servers")?;
@@ -72,11 +72,11 @@ fn main() -> Result<()> {
             mcrcon::run(&server, vec!["stop"])
                 .wrap_err_with(|| format!("Failed to stop server {}", &server))?;
         }
-        Commands::Remove { server } => server::remove_server_with_confirmation(if server == "." {
-            get_current_server_directory().wrap_err("Failed to get current server directory")?
+        Commands::Remove { servers, force } => if force {
+            server::remove_servers(servers)
         } else {
-            server
-        })
+            server::remove_servers_with_confirmation(servers)
+        }
         .wrap_err("Failed to remove server")?,
 
         Commands::Update { git, commit, path } => {
