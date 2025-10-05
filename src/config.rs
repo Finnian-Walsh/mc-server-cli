@@ -123,7 +123,7 @@ pub fn get_current_server_directory() -> Result<String> {
         .strip_prefix(servers_dir)?
         .components()
         .next()
-        .ok_or(Error::NoServerFound)?
+        .ok_or(Error::NoServerChild)?
         .as_os_str()
         .to_string_lossy()
         .to_string();
