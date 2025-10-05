@@ -58,11 +58,7 @@ pub fn remove_server_with_confirmation(name: String) -> Result<()> {
             break false;
         }
     } {
-        remove_dir_with_retries(
-            home::get()?
-                .join(&config::get_expanded_servers_dir()?)
-                .join(name),
-        )?;
+        remove_dir_with_retries(&config::get_expanded_servers_dir()?.join(name))?;
         println!("Server successfully removed");
     } else {
         println!("Operation canceled");
