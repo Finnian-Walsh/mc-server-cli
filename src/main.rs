@@ -12,7 +12,7 @@ mod zellij;
 use clap::Parser;
 use cli::*;
 use color_eyre::eyre::{Result, WrapErr};
-// use config::get_current_server_directory;
+use config::get_current_server_directory;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -72,9 +72,13 @@ fn main() -> Result<()> {
             mcrcon::run(&server, vec!["stop"])
                 .wrap_err_with(|| format!("Failed to stop server {}", &server))?;
         }
-        Commands::Remove { server } => {
-            server::remove_server_with_confirmation(server).wrap_err("Failed to remove server")?
-        }
+        Commands::Remove { server } => server::remove_server_with_confirmation(if server == "." {
+            get_current_server_directory().wrap_err("Failed to get current server directory")?
+        } else {
+            server
+        })
+        .wrap_err("Failed to remove server")?,
+
         Commands::Update { git, commit, path } => {
             if let Some(path) = path {
                 repo::update_with_path(&path)
