@@ -5,6 +5,7 @@ use crate::{
 };
 use reqwest::{blocking, header};
 use std::{
+    collections::HashSet,
     env,
     fs::{self, File},
     io::{self, Write},
@@ -40,28 +41,54 @@ pub fn remove_dir_with_retries<P: AsRef<Path>>(dir: P) -> Result<()> {
     unreachable!("Code returns before the for loop ends")
 }
 
-pub fn remove_server_with_confirmation(name: String) -> Result<()> {
-    if loop {
-        print!(
-            "Enter {} to delete the server or nothing to cancel operation: ",
-            name
-        );
-        io::stdout().flush()?;
+fn remove_server(server: String) -> Result<()> {
+    remove_dir_with_retries(&config::get_expanded_servers_dir()?.join(server))?;
+    Ok(())
+}
 
-        let mut response = String::new();
-        io::stdin().read_line(&mut response)?;
+pub fn remove_servers(servers: Vec<String>) -> Result<()> {
+    let all_servers = get_all_hashed()?;
 
-        if name == response.trim_end() {
-            break true;
-        } else if response.is_empty() {
-            break false;
+    for server in servers {
+        if all_servers.get(&server).is_none() {
+            return Err(Error::NoServerFound(server));
         }
-    } {
-        remove_dir_with_retries(&config::get_expanded_servers_dir()?.join(name))?;
-        println!("Server successfully removed");
-    } else {
-        println!("Operation canceled");
     }
+
+    Ok(())
+}
+
+pub fn remove_servers_with_confirmation(servers: Vec<String>) -> Result<()> {
+    let all_servers = get_all_hashed()?;
+
+    for server in servers {
+        if all_servers.get(&server).is_none() {
+            return Err(Error::NoServerFound(server));
+        }
+
+        if loop {
+            print!(
+                "Enter `{}` to delete the server or nothing to cancel operation: ",
+                server
+            );
+            io::stdout().flush()?;
+
+            let mut response = String::new();
+            io::stdin().read_line(&mut response)?;
+
+            if server == response.trim_end() {
+                break true;
+            } else if response.is_empty() {
+                break false;
+            }
+        } {
+            remove_server(server)?;
+            println!("Server successfully removed");
+        } else {
+            println!("Operation canceled");
+        }
+    }
+
     Ok(())
 }
 
@@ -108,9 +135,7 @@ pub fn init(download_url: Url, platform: Platform, name: Option<String>) -> Resu
     Ok(())
 }
 
-pub fn get_all() -> Result<Vec<String>> {
-    let mut servers = vec![];
-
+pub fn for_each<F: FnMut(String)>(mut f: F) -> Result<()> {
     let servers_dir = config::get_expanded_servers_dir()?;
 
     if !servers_dir.exists() || !servers_dir.is_dir() {
@@ -121,8 +146,16 @@ pub fn get_all() -> Result<Vec<String>> {
 
     for entry in fs::read_dir(servers_dir)? {
         let entry = entry?;
-        servers.push(entry.file_name().to_string_lossy().into_owned());
+        f(entry.file_name().to_string_lossy().into_owned());
     }
 
+    Ok(())
+}
+
+pub fn get_all_hashed() -> Result<HashSet<String>> {
+    let mut servers = HashSet::new();
+    for_each(|s| {
+        servers.insert(s);
+    })?;
     Ok(servers)
 }
