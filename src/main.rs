@@ -2,7 +2,6 @@ mod cli;
 mod config;
 mod deployment;
 mod error;
-mod home;
 mod mcrcon;
 mod platforms;
 mod repo;
@@ -13,7 +12,7 @@ mod zellij;
 use clap::Parser;
 use cli::*;
 use color_eyre::eyre::{Result, WrapErr};
-use config::unwrap_or_default;
+// use config::get_current_server_directory;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -21,7 +20,7 @@ fn main() -> Result<()> {
     let args = Cli::parse();
 
     match args.command {
-        Commands::Attach { server } => zellij::attach(unwrap_or_def_server!(server)?)
+        Commands::Attach { server } => zellij::attach(handle_server_arg!(server))
             .wrap_err("Failed to attach to zellij session")?,
         Commands::Config { config_type } => match config_type {
             ConfigType::Static => println!("{:?}", config::get_static()),
@@ -32,11 +31,11 @@ fn main() -> Result<()> {
             DefaultCommands::Set { server } => config::get()?.default_server = server,
         },
         Commands::Deploy { server } => {
-            let server = unwrap_or_def_server!(server)?;
+            let server = handle_server_arg!(server);
             zellij::new(&server, Some(&deployment::get_command(&server)?))?;
         }
         Commands::Execute { server, commands } => {
-            let server = unwrap_or_def_server!(server)?;
+            let server = handle_server_arg!(server);
             for command in commands {
                 zellij::write_line(&server, command)?;
             }
@@ -55,10 +54,8 @@ fn main() -> Result<()> {
 
             println!("{}", servers.join("\n"));
         }
-        Commands::Mcrcon { server, commands } => {
-            mcrcon::run(&unwrap_or_def_server!(server)?, commands)
-                .wrap_err("Failed to run mcrcon command")?
-        }
+        Commands::Mcrcon { server, commands } => mcrcon::run(&handle_server_arg!(server), commands)
+            .wrap_err("Failed to run mcrcon command")?,
         Commands::New {
             platform,
             version,
@@ -71,7 +68,7 @@ fn main() -> Result<()> {
         )
         .wrap_err(format!("Failed to initialize {:?} server", platform))?,
         Commands::Stop { server } => {
-            let server = unwrap_or_def_server!(server)?;
+            let server = handle_server_arg!(server);
             mcrcon::run(&server, vec!["stop"])
                 .wrap_err_with(|| format!("Failed to stop server {}", &server))?;
         }

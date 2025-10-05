@@ -1,7 +1,7 @@
 use crate::error::{Error, GlobalMutex, Result};
 use config::{DynamicConfig, STATIC_CONFIG, StaticConfig, get_default_dynamic_config};
 use std::{
-    fs,
+    env, fs,
     ops::Deref,
     path::{Path, PathBuf},
     sync::{Mutex, MutexGuard, OnceLock},
@@ -111,13 +111,41 @@ pub fn get_expanded_servers_dir() -> Result<&'static Path> {
         .as_path())
 }
 
-pub fn unwrap_or_default(server: Option<String>) -> Result<String> {
-    server.map_or_else(|| Ok(get()?.default_server.clone()), |val| Ok(val))
+pub fn get_current_server_directory() -> Result<String> {
+    let servers_dir = get_expanded_servers_dir()?;
+    let current_dir = env::current_dir()?;
+
+    if !current_dir.starts_with(&servers_dir) {
+        return Err(Error::InvalidServersDirectory);
+    }
+
+    let server = current_dir
+        .strip_prefix(servers_dir)?
+        .components()
+        .next()
+        .ok_or(Error::NoServerFound)?
+        .as_os_str()
+        .to_string_lossy()
+        .to_string();
+
+    Ok(server)
 }
 
 #[macro_export]
-macro_rules! unwrap_or_def_server {
-    ($server:expr) => {
-        unwrap_or_default($server).wrap_err("Failed to get default server")
-    };
+macro_rules! handle_server_arg {
+    ($server:expr) => {{
+        use crate::config::{get, get_current_server_directory};
+        let server = $server
+            .map_or_else::<Result<String>, _, _>(
+                || Ok(get()?.default_server.clone()),
+                |val| Ok(val),
+            )
+            .wrap_err("Failed to get configuration")?;
+
+        if server == "." {
+            get_current_server_directory().wrap_err("Failed to get current server directory")?
+        } else {
+            server
+        }
+    }};
 }
