@@ -47,8 +47,11 @@ pub enum Error {
     #[error("Missing file: {}", file.display())]
     MissingFile { file: PathBuf },
 
-    #[error("No server found in current directory")]
-    NoServerFound,
+    #[error("No server child was given")]
+    NoServerChild,
+
+    #[error("No server {0} was found")]
+    NoServerFound(String),
 
     #[error("Platforms not found: {0}")]
     PlatformsNotFound(String),
