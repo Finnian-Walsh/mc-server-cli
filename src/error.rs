@@ -71,6 +71,12 @@ pub enum Error {
     #[error(transparent)]
     StripPrefix(#[from] path::StripPrefixError),
 
+    #[error("Template {0} already exists")]
+    TemplateAlreadyExists(String),
+
+    #[error("Template with the name {0} was not found")]
+    TemplateNotFound(String),
+
     #[error(transparent)]
     TomlDeserialize(#[from] toml::de::Error),
 
