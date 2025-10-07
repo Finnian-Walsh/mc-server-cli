@@ -20,7 +20,7 @@ pub fn create() -> Result<&'static Client> {
             "{}/{} (contact: {})",
             env!("CARGO_PKG_NAME"),
             env!("CARGO_PKG_VERSION"),
-            STATIC_CONFIG.contact.trim_start().trim_end().to_string()
+            STATIC_CONFIG.contact.trim_start().trim_end()
         ))?,
     );
 
