@@ -23,7 +23,7 @@ fn get_alive_sessions() -> Result<HashSet<String>> {
                     None => return true,
                 };
 
-                line[bracket_pos..].find("EXITED").is_none() // if there is no "EXITED", still alive
+                line[bracket_pos..].contains("EXITED") // if there is no "EXITED", still alive
             })
             .map(|line| {
                 match line.rfind("[Created") {
@@ -65,8 +65,6 @@ pub fn tag_active(servers: &mut Vec<String>) -> Result<()> {
 }
 
 pub fn attach<S: AsRef<OsStr> + for<'a> PartialEq<&'a str>>(session: S) -> Result<()> {
-    if session == "." {}
-
     let mut child = Command::new(BASE_COMMAND)
         .arg("attach")
         .arg(&session)
