@@ -1,13 +1,10 @@
 use reqwest::header;
-use shellexpand;
 use std::{
     env, io,
     path::{self, PathBuf},
     result,
 };
 use thiserror::Error;
-use toml;
-use url;
 
 #[derive(Debug, Error)]
 pub enum GlobalMutex {
@@ -50,9 +47,6 @@ pub enum Error {
     #[error("No server child was given")]
     NoServerChild,
 
-    #[error("No server {0} was found")]
-    NoServerFound(String),
-
     #[error("Platforms not found: {0}")]
     PlatformsNotFound(String),
 
@@ -67,6 +61,12 @@ pub enum Error {
 
     #[error(transparent)]
     ShellexpandLookup(#[from] shellexpand::LookupError<env::VarError>),
+
+    #[error("Server {0} already exists")]
+    ServerAlreadyExists(String),
+
+    #[error("Server {0} was not found")]
+    ServerNotFound(String),
 
     #[error(transparent)]
     StripPrefix(#[from] path::StripPrefixError),

@@ -77,6 +77,12 @@ pub enum Commands {
     #[command(about = "Stop a server")]
     Stop { server: Option<String> },
 
+    #[command(visible_alias = "tmpl", about = "Create or use a template server")]
+    Template {
+        #[command(subcommand)]
+        action: TemplateCommands,
+    },
+
     #[command(visible_alias = "up", about = "Update the server binary",
         group(
                 ArgGroup::new("source")
@@ -108,4 +114,18 @@ pub enum DefaultCommands {
     Get,
 
     Set { server: String },
+}
+
+#[derive(Subcommand)]
+pub enum TemplateCommands {
+    New {
+        server: String,
+    },
+
+    From {
+        template: String,
+
+        #[arg(short, long)]
+        server: Option<String>,
+    },
 }

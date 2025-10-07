@@ -7,6 +7,7 @@ mod platforms;
 mod repo;
 mod reqwest_client;
 mod server;
+mod template;
 mod zellij;
 
 use clap::Parser;
@@ -31,6 +32,12 @@ fn main() -> Result<()> {
         },
         Commands::Deploy { server } => {
             let server = handle_server_arg!(server);
+
+            if template::is_template(&server) {
+                eprintln!("Template servers cannot be deployed");
+                return Ok(());
+            }
+
             zellij::new(&server, Some(&deployment::get_command(&server)?))?;
         }
         Commands::Execute { server, commands } => {
@@ -67,18 +74,25 @@ fn main() -> Result<()> {
             name,
         )
         .wrap_err(format!("Failed to initialize {:?} server", platform))?,
-        Commands::Stop { server } => {
-            let server = handle_server_arg!(server);
-            mcrcon::run(&server, vec!["stop"])
-                .wrap_err_with(|| format!("Failed to stop server {}", &server))?;
-        }
         Commands::Remove { servers, force } => if force {
             server::remove_servers(servers)
         } else {
             server::remove_servers_with_confirmation(servers)
         }
         .wrap_err("Failed to remove server")?,
-
+        Commands::Stop { server } => {
+            let server = handle_server_arg!(server);
+            mcrcon::run(&server, vec!["stop"])
+                .wrap_err_with(|| format!("Failed to stop server {}", &server))?;
+        }
+        Commands::Template { action } => match action {
+            TemplateCommands::New { server } => template::new(&server)
+                .wrap_err_with(|| format!("Failed to create template with server {server}"))?,
+            TemplateCommands::From { template, server } => {
+                template::from(&template, server.as_deref())
+                    .wrap_err_with(|| format!("Failed to use template {template}"))?
+            }
+        },
         Commands::Update { git, commit, path } => {
             if let Some(path) = path {
                 repo::update_with_path(&path)
