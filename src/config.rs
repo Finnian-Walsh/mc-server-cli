@@ -6,7 +6,6 @@ use std::{
     path::{Path, PathBuf},
     sync::{Mutex, MutexGuard, OnceLock},
 };
-use toml;
 
 pub struct AutoConfig {
     // type ValueType = OnceLock<Mutex<DynamicConfig>>;
@@ -70,7 +69,7 @@ fn get_config_file() -> Result<&'static Path> {
 }
 
 pub fn get_static() -> &'static StaticConfig {
-    return &STATIC_CONFIG;
+    &STATIC_CONFIG
 }
 
 pub fn get() -> Result<MutexGuard<'static, DynamicConfig>> {
@@ -115,7 +114,7 @@ pub fn get_current_server_directory() -> Result<String> {
     let servers_dir = get_expanded_servers_dir()?;
     let current_dir = env::current_dir()?;
 
-    if !current_dir.starts_with(&servers_dir) {
+    if !current_dir.starts_with(servers_dir) {
         return Err(Error::InvalidServersDirectory);
     }
 
@@ -134,7 +133,7 @@ pub fn get_current_server_directory() -> Result<String> {
 #[macro_export]
 macro_rules! handle_server_arg {
     ($server:expr) => {{
-        use crate::config::{get, get_current_server_directory};
+        use $crate::config::{get, get_current_server_directory};
 
         let server = $server
             .map_or_else::<Result<String>, _, _>(
