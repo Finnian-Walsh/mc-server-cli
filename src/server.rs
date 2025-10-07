@@ -2,7 +2,6 @@ use crate::{
     config::{get_current_server_directory, get_expanded_servers_dir},
     error::{Error, Result},
     platforms::Platform,
-    template,
 };
 use reqwest::{blocking, header};
 use std::{
