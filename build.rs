@@ -34,7 +34,7 @@ fn main() -> Result<()> {
                 "cargo:warning=static configuration ({}) should be a file - the default static configuration will be used",
                 config_path
                     .components()
-                    .last()
+                    .next_back()
                     .map(|c| format!("{:?}", c))
                     .unwrap_or_else(|| String::from("unknown"))
             );
