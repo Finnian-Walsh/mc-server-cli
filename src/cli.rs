@@ -106,6 +106,7 @@ pub enum Commands {
 pub enum ConfigType {
     Static,
 
+    #[clap(visible_alias = "dyn")]
     Dynamic,
 }
 
