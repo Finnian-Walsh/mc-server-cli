@@ -15,7 +15,15 @@ struct Config {
     default_dynamic_config: DynamicConfig,
 }
 
+macro_rules! build_log {
+    ($($arg:tt)*) => {
+        #[cfg(feature = "build-logging")]
+        println!("cargo:warning={}", format!($($arg)*))
+    }
+}
+
 fn main() -> Result<()> {
+    build_log!("Build script running...");
     color_eyre::install()?;
 
     let cargo_manifest_dir = PathBuf::new().join(env::var("CARGO_MANIFEST_DIR")?);
@@ -29,9 +37,11 @@ fn main() -> Result<()> {
     println!("cargo:rerun-if-changed={}", config_path.display());
 
     if config_path.exists() {
+        build_log!("Configuration path exists ({config_path:?})");
+
         if !config_path.is_file() {
-            println!(
-                "cargo:warning=static configuration ({}) should be a file - the default static configuration will be used",
+            build_log!(
+                "Static configuration ({}) should be a file - the default static configuration will be used",
                 config_path
                     .components()
                     .next_back()
@@ -64,11 +74,11 @@ fn main() -> Result<()> {
         if dynamic_config_path.exists() {
             if !dynamic_config_path.is_file() {
                 println!(
-                    "cargo:warning=There is something at the path where the dynamic configuration is supposed to exist; this will cause problems in the future"
+                    "cargo:warning=[build-script-out] There is something at the path where the dynamic configuration is supposed to exist; this will cause problems in the future"
                 );
+            } else {
+                build_log!("Dynamic configuration found");
             }
-
-            return Ok(());
         } else {
             fs::create_dir_all(&*expanded_dynamic_config_dir)?;
             fs::write(
@@ -85,6 +95,9 @@ fn main() -> Result<()> {
         }
 
         println!("cargo:rustc-cfg=config_generated");
+        build_log!("Configuration has been generated");
+    } else {
+        build_log!("Config path ({config_path:?}) does not exist");
     }
 
     Ok(())
