@@ -12,6 +12,9 @@ pub fn is_template(server: &str) -> bool {
 }
 
 pub fn new(server: &str) -> Result<()> {
+    if is_template(server) {
+        return Err(Error::TemplateUsedForTemplate);
+    }
     println!("Creating template using server {server}...");
 
     let servers_dir = get_expanded_servers_dir()?;
@@ -49,10 +52,16 @@ fn get_server_path(servers_dir: impl AsRef<Path>, name: &str) -> PathBuf {
 }
 
 pub fn from(template: &str, server: Option<&str>) -> Result<()> {
-    println!("Creating server from {template}...");
-
     let servers_dir = get_expanded_servers_dir()?;
-    let template_path = servers_dir.join(format!("{template}{TEMPLATE_SUFFIX}"));
+
+    let template_path = if template.ends_with(TEMPLATE_SUFFIX) {
+        println!("Creating server from {template}");
+        servers_dir.join(template)
+    } else {
+        let template_name = format!("{template}{TEMPLATE_SUFFIX}");
+        println!("Creating server from {template_name}");
+        servers_dir.join(template_name)
+    };
 
     if !template_path.exists() {
         return Err(Error::TemplateNotFound(template.to_string()));
