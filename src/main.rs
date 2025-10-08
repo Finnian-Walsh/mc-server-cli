@@ -23,8 +23,8 @@ fn main() -> Result<()> {
         Commands::Attach { server } => zellij::attach(handle_server_arg!(server))
             .wrap_err("Failed to attach to zellij session")?,
         Commands::Config { config_type } => match config_type {
-            ConfigType::Static => println!("{:?}", config::get_static()),
-            ConfigType::Dynamic => println!("{:?}", config::get()?),
+            ConfigType::Static => println!("{:#?}", config::get_static()),
+            ConfigType::Dynamic => println!("{:#?}", config::get()?),
         },
         Commands::Default { action } => match action {
             DefaultCommands::Get => println!("{}", config::get()?.default_server),
@@ -32,12 +32,6 @@ fn main() -> Result<()> {
         },
         Commands::Deploy { server } => {
             let server = handle_server_arg!(server);
-
-            if template::is_template(&server) {
-                eprintln!("Template servers cannot be deployed");
-                return Ok(());
-            }
-
             zellij::new(&server, Some(&deployment::get_command(&server)?))?;
         }
         Commands::Execute { server, commands } => {
