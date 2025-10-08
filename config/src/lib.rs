@@ -2,7 +2,12 @@ use cfg_if::cfg_if;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Debug, sync::OnceLock};
+use std::{
+    collections::HashMap,
+    ffi::OsStr,
+    fmt::{self, Debug, Formatter},
+    sync::OnceLock,
+};
 
 cfg_if! {
     if #[cfg(config_generated)] {
@@ -58,22 +63,57 @@ impl ToTokens for StaticConfig<String> {
     }
 }
 
+#[derive(Clone, Deserialize, Serialize)]
+pub struct Password(String);
+
+impl AsRef<OsStr> for Password {
+    fn as_ref(&self) -> &OsStr {
+        OsStr::new(&self.0)
+    }
+}
+
+impl ToTokens for Password {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let password = &self.0;
+        tokens.extend(quote! {#password})
+    }
+}
+
+impl Debug for Password {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "(hidden)")
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct McrconConfig {
     pub server_address: Option<String>,
     pub port: Option<u16>,
-    pub password: Option<String>,
+    pub password: Option<Password>,
 }
 
 impl ToTokens for McrconConfig {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let server_address = &self.server_address;
-        let port = &self.port;
-        let password = &self.password;
+        let server_address = match self.server_address.as_ref() {
+            Some(server_address) => quote! {
+                Some(String::from(#server_address))
+            },
+            None => quote! { None },
+        };
+
+        let port = match self.port {
+            Some(port) => quote! { Some(#port) },
+            None => quote! { None },
+        };
+
+        let password = match self.password.as_ref() {
+            Some(password) => quote! { Some(String::from(#password)) },
+            None => quote! { None },
+        };
 
         tokens.extend(quote! {
             McrconConfig {
-                server_address: String::from(#server_address),
+                server_address: #server_address,
                 port: #port,
                 password: String::from(#password),
             }
