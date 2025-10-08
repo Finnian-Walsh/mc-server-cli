@@ -74,8 +74,14 @@ pub enum Error {
     #[error("Template {0} already exists")]
     TemplateAlreadyExists(String),
 
+    #[error("Template servers cannot be deployed")]
+    TemplateDeployed,
+
     #[error("Template with the name {0} was not found")]
     TemplateNotFound(String),
+
+    #[error("Cannot create a template with a template")]
+    TemplateUsedForTemplate,
 
     #[error(transparent)]
     TomlDeserialize(#[from] toml::de::Error),
