@@ -45,12 +45,13 @@ pub fn get_command(server: &str) -> Result<String> {
     let server_dir = get_server_dir(server)?;
     let config = &config::get()?;
     Ok(format!(
-        "cd {} && java -jar {} {}{} && {} kill-session $ZELLIJ_SESSION_NAME",
+        "cd {} && java -jar {} {} {} && {} action rename-tab Server && {} kill-session $ZELLIJ_SESSION_NAME",
         server_dir.to_string_lossy(),
         config.default_java_args,
         get_server_jar_path(&server_dir)?.to_string_lossy(),
-        if config.nogui { " nogui" } else { "" },
-        session::BASE_COMMAND
+        if config.nogui { "nogui" } else { "" },
+        session::BASE_COMMAND,
+        session::BASE_COMMAND,
     ))
 }
 
