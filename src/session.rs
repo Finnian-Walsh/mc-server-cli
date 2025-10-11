@@ -1,16 +1,25 @@
-use crate::error::{Error, Result};
+use crate::{
+    error::{Error, Result},
+    session,
+};
 use std::{
     collections::HashSet,
     ffi::OsStr,
+    fmt::Display,
     io::{self, Read},
     process::{Command, Stdio},
     thread,
     time::Duration,
 };
 
-static BASE_COMMAND: &str = "zellij";
+pub static BASE_COMMAND: &str = "zellij";
+pub static SUFFIX: &str = ".mcserver";
 
-fn get_alive_sessions() -> Result<HashSet<String>> {
+pub fn get_name(server: impl Display) -> String {
+    format!("{server}{SUFFIX}")
+}
+
+fn get_alive_server_sessions() -> Result<HashSet<String>> {
     let output = Command::new(BASE_COMMAND).arg("list-sessions").output()?;
 
     match output.status.code() {
@@ -32,6 +41,8 @@ fn get_alive_sessions() -> Result<HashSet<String>> {
                 }
                 .to_string()
             })
+            .filter(|session| session.ends_with(session::SUFFIX))
+            .map(|session| session[..session.len() - session::SUFFIX.len()].to_string())
             .collect()),
         Some(1) => Ok(HashSet::new()), // no sessions
         _ => Err(Error::CommandFailure {
@@ -42,19 +53,19 @@ fn get_alive_sessions() -> Result<HashSet<String>> {
 }
 
 pub fn retain_active(servers: &mut Vec<String>) -> Result<()> {
-    let sessions = get_alive_sessions()?;
+    let sessions = get_alive_server_sessions()?;
     servers.retain(|server| sessions.contains(server));
     Ok(())
 }
 
 pub fn retain_inactive(servers: &mut Vec<String>) -> Result<()> {
-    let sessions = get_alive_sessions()?;
+    let sessions = get_alive_server_sessions()?;
     servers.retain(|server| !sessions.contains(server));
     Ok(())
 }
 
-pub fn tag_active(servers: &mut Vec<String>) -> Result<()> {
-    let sessions = get_alive_sessions()?;
+pub fn tag_active(servers: &mut [String]) -> Result<()> {
+    let sessions = get_alive_server_sessions()?;
 
     servers.iter_mut().for_each(|server| {
         if sessions.contains(server) {
@@ -67,7 +78,7 @@ pub fn tag_active(servers: &mut Vec<String>) -> Result<()> {
 pub fn attach<S: AsRef<OsStr> + for<'a> PartialEq<&'a str>>(session: S) -> Result<()> {
     let mut child = Command::new(BASE_COMMAND)
         .arg("attach")
-        .arg(&session)
+        .arg(session)
         .stderr(Stdio::piped())
         .spawn()?;
 
@@ -93,28 +104,38 @@ pub fn attach<S: AsRef<OsStr> + for<'a> PartialEq<&'a str>>(session: S) -> Resul
     }
 }
 
-pub fn new<N: AsRef<OsStr>, C: AsRef<OsStr>>(name: N, initial_command: Option<C>) -> Result<()> {
+pub fn new_session(
+    session: impl AsRef<OsStr>,
+    initial_command: Option<impl AsRef<OsStr>>,
+) -> Result<()> {
     Command::new(BASE_COMMAND)
         .arg("delete-session")
-        .arg(&name)
+        .arg(&session)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .status()?;
+
     let mut command = Command::new(BASE_COMMAND);
-
-    command.arg("--session").arg(&name);
-
+    command.arg("--session").arg(&session);
     let mut child = command.spawn()?;
 
     thread::sleep(Duration::from_millis(300));
 
     if let Some(command) = initial_command {
-        write_line(&name, command)?;
+        write_line(&session, command)?;
     }
 
     child.wait()?;
 
     Ok(())
+}
+
+pub fn new_server<N: Display, C: AsRef<OsStr>>(
+    server: N,
+    initial_command: Option<C>,
+) -> Result<()> {
+    let session_name = get_name(server);
+    new_session(session_name, initial_command)
 }
 
 fn session_write<S, C>(session: S, mode: &'static str, chars: C) -> Result<()>
@@ -155,6 +176,6 @@ where
     C: AsRef<OsStr>,
 {
     write_chars(&session, chars)?;
-    session_write(&session, "write", "13")?;
+    session_write(&session, "write", "13")?; // 13 is for carriage return
     Ok(())
 }
