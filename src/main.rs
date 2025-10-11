@@ -20,8 +20,10 @@ fn main() -> Result<()> {
     let args = Cli::parse();
 
     match args.command {
-        Commands::Attach { server } => session::attach(handle_server_arg!(server))
-            .wrap_err("Failed to attach to session session")?,
+        Commands::Attach { server } => {
+            session::attach(session::get_name(handle_server_arg!(server)))
+                .wrap_err("Failed to attach to session session")?
+        }
         Commands::Config { config_type } => match config_type {
             ConfigType::Static => println!("{:#?}", config::get_static()),
             ConfigType::Dynamic => println!("{:#?}", config::get()?),
