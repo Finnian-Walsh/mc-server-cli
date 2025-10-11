@@ -1,6 +1,7 @@
 use reqwest::header;
 use std::{
-    env, io,
+    env::VarError,
+    io,
     path::{self, PathBuf},
     result,
 };
@@ -32,6 +33,9 @@ pub enum Error {
     #[error(transparent)]
     InvalidHeaderValue(#[from] header::InvalidHeaderValue),
 
+    #[error("Invalid server session: `{0}`")]
+    InvalidServerSession(String),
+
     #[error("Invalid servers directory")]
     InvalidServersDirectory,
 
@@ -47,6 +51,9 @@ pub enum Error {
     #[error("No server child was given")]
     NoServerChild,
 
+    #[error("No session name found")]
+    NoSessionName,
+
     #[error("Platforms not found: {0}")]
     PlatformsNotFound(String),
 
@@ -60,7 +67,7 @@ pub enum Error {
     Reqwest(#[from] reqwest::Error),
 
     #[error(transparent)]
-    ShellexpandLookup(#[from] shellexpand::LookupError<env::VarError>),
+    ShellexpandLookup(#[from] shellexpand::LookupError<VarError>),
 
     #[error("Server {0} already exists")]
     ServerAlreadyExists(String),

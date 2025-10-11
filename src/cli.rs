@@ -74,6 +74,9 @@ pub enum Commands {
         servers: Vec<String>,
     },
 
+    #[command(visible_alias = "rst", about = "Restart the current server")]
+    Restart,
+
     #[command(about = "Stop a server")]
     Stop { server: Option<String> },
 

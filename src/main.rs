@@ -7,8 +7,8 @@ mod platforms;
 mod repo;
 mod reqwest_client;
 mod server;
+mod session;
 mod template;
-mod zellij;
 
 use clap::Parser;
 use cli::*;
@@ -20,8 +20,8 @@ fn main() -> Result<()> {
     let args = Cli::parse();
 
     match args.command {
-        Commands::Attach { server } => zellij::attach(handle_server_arg!(server))
-            .wrap_err("Failed to attach to zellij session")?,
+        Commands::Attach { server } => session::attach(handle_server_arg!(server))
+            .wrap_err("Failed to attach to session session")?,
         Commands::Config { config_type } => match config_type {
             ConfigType::Static => println!("{:#?}", config::get_static()),
             ConfigType::Dynamic => println!("{:#?}", config::get()?),
@@ -32,12 +32,12 @@ fn main() -> Result<()> {
         },
         Commands::Deploy { server } => {
             let server = handle_server_arg!(server);
-            zellij::new(&server, Some(&deployment::get_command(&server)?))?;
+            session::new_server(&server, Some(&deployment::get_command(&server)?))?;
         }
         Commands::Execute { server, commands } => {
-            let server = handle_server_arg!(server);
+            let session_name = session::get_name(handle_server_arg!(server));
             for command in commands {
-                zellij::write_line(&server, command)?;
+                session::write_line(&session_name, command)?;
             }
         }
         Commands::List { active, inactive } => {
@@ -45,12 +45,12 @@ fn main() -> Result<()> {
             server::for_each(|s| servers.push(s)).wrap_err("Failed to get servers")?;
 
             if active {
-                zellij::retain_active(&mut servers).wrap_err("Failed to retain active servers")?;
+                session::retain_active(&mut servers).wrap_err("Failed to retain active servers")?;
             } else if inactive {
-                zellij::retain_inactive(&mut servers)
+                session::retain_inactive(&mut servers)
                     .wrap_err("Failed to retain inactive servers")?;
             } else {
-                zellij::tag_active(&mut servers).wrap_err("Failed to tag active servers")?;
+                session::tag_active(&mut servers).wrap_err("Failed to tag active servers")?;
             }
 
             println!("{}", servers.join("\n"));
@@ -74,6 +74,7 @@ fn main() -> Result<()> {
             server::remove_servers_with_confirmation(servers)
         }
         .wrap_err("Failed to remove server")?,
+        Commands::Restart => deployment::restart().wrap_err("Failed to restart server")?,
         Commands::Stop { server } => {
             let server = handle_server_arg!(server);
             mcrcon::run(&server, vec!["stop"])
