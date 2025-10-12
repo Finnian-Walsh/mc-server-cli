@@ -21,7 +21,7 @@ pub fn update_with_git(commit: Option<String>) -> io::Result<()> {
     Ok(())
 }
 
-pub fn update_with_path<P: AsRef<OsStr>>(path: P) -> io::Result<()> {
+pub fn update_with_path(path: impl AsRef<OsStr>) -> io::Result<()> {
     Command::new("cargo")
         .arg("install")
         .arg("--path")
