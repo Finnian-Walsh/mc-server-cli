@@ -1,5 +1,6 @@
 use crate::{
     error::{Error, Result},
+    server::{get_last_used, save_last_used},
     session,
 };
 use std::{
@@ -7,6 +8,7 @@ use std::{
     ffi::OsStr,
     fmt::Display,
     io::{self, Read},
+    path::Path,
     process::{Command, Stdio},
     thread,
     time::Duration,
@@ -52,6 +54,14 @@ fn get_alive_server_sessions() -> Result<HashSet<String>> {
     }
 }
 
+fn push_last_used(server: &mut String) {
+    let last_used = get_last_used(&server);
+
+    server.push_str(" (Last used \x1b[35;1m");
+    server.push_str(last_used.unwrap_or(None).as_deref().unwrap_or("unknown"));
+    server.push_str("\x1b[0m ago)");
+}
+
 pub fn retain_active(servers: &mut Vec<String>) -> Result<()> {
     let sessions = get_alive_server_sessions()?;
     servers.retain(|server| sessions.contains(server));
@@ -61,21 +71,24 @@ pub fn retain_active(servers: &mut Vec<String>) -> Result<()> {
 pub fn retain_inactive(servers: &mut Vec<String>) -> Result<()> {
     let sessions = get_alive_server_sessions()?;
     servers.retain(|server| !sessions.contains(server));
+    servers.iter_mut().for_each(push_last_used);
     Ok(())
 }
 
-pub fn tag_active(servers: &mut [String]) -> Result<()> {
+pub fn tag_servers(servers: &mut [String]) -> Result<()> {
     let sessions = get_alive_server_sessions()?;
 
     servers.iter_mut().for_each(|server| {
         if sessions.contains(server) {
-            server.push_str(" (active)");
+            server.push_str(" (\x1b[32;1mactive\x1b[0m)");
+        } else {
+            push_last_used(server);
         }
     });
     Ok(())
 }
 
-pub fn attach<S: AsRef<OsStr> + for<'a> PartialEq<&'a str>>(session: S) -> Result<()> {
+pub fn attach(session: impl AsRef<OsStr> + for<'a> PartialEq<&'a str>) -> Result<()> {
     let mut child = Command::new(BASE_COMMAND)
         .arg("attach")
         .arg(session)
@@ -104,10 +117,11 @@ pub fn attach<S: AsRef<OsStr> + for<'a> PartialEq<&'a str>>(session: S) -> Resul
     }
 }
 
-pub fn new_session(
-    session: impl AsRef<OsStr>,
-    initial_command: Option<impl AsRef<OsStr>>,
-) -> Result<()> {
+pub fn new_session<S, I>(session: S, initial_command: Option<I>) -> Result<()>
+where
+    S: AsRef<OsStr>,
+    I: AsRef<OsStr>,
+{
     Command::new(BASE_COMMAND)
         .arg("delete-session")
         .arg(&session)
@@ -130,19 +144,20 @@ pub fn new_session(
     Ok(())
 }
 
-pub fn new_server<N: Display, C: AsRef<OsStr>>(
-    server: N,
-    initial_command: Option<C>,
+pub fn new_server(
+    server: impl Display + AsRef<Path>,
+    initial_command: Option<impl AsRef<OsStr>>,
 ) -> Result<()> {
-    let session_name = get_name(server);
-    new_session(session_name, initial_command)
+    let session_name = get_name(&server);
+    new_session(session_name, initial_command)?;
+    save_last_used(server)
 }
 
-fn session_write<S, C>(session: S, mode: &'static str, chars: C) -> Result<()>
-where
-    S: AsRef<OsStr>,
-    C: AsRef<OsStr>,
-{
+fn session_write(
+    session: impl AsRef<OsStr>,
+    mode: &'static str,
+    chars: impl AsRef<OsStr>,
+) -> Result<()> {
     let status = Command::new(BASE_COMMAND)
         .arg("--session")
         .arg(session)
@@ -162,19 +177,11 @@ where
     Ok(())
 }
 
-pub fn write_chars<S, C>(session: S, chars: C) -> Result<()>
-where
-    S: AsRef<OsStr>,
-    C: AsRef<OsStr>,
-{
+pub fn write_chars(session: impl AsRef<OsStr>, chars: impl AsRef<OsStr>) -> Result<()> {
     session_write(session, "write-chars", chars)
 }
 
-pub fn write_line<S, C>(session: S, chars: C) -> Result<()>
-where
-    S: AsRef<OsStr>,
-    C: AsRef<OsStr>,
-{
+pub fn write_line(session: impl AsRef<OsStr>, chars: impl AsRef<OsStr>) -> Result<()> {
     write_chars(&session, chars)?;
     session_write(&session, "write", "13")?; // 13 is for carriage return
     Ok(())

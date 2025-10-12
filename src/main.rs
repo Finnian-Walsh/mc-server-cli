@@ -52,7 +52,7 @@ fn main() -> Result<()> {
                 session::retain_inactive(&mut servers)
                     .wrap_err("Failed to retain inactive servers")?;
             } else {
-                session::tag_active(&mut servers).wrap_err("Failed to tag active servers")?;
+                session::tag_servers(&mut servers).wrap_err("Failed to tag active servers")?;
             }
 
             println!("{}", servers.join("\n"));
