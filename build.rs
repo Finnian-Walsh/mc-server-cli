@@ -46,7 +46,8 @@ fn main() -> Result<()> {
                     .components()
                     .next_back()
                     .map(|c| format!("{:?}", c))
-                    .unwrap_or_else(|| String::from("unknown"))
+                    .as_deref()
+                    .unwrap_or("unknown")
             );
             return Ok(());
         }
