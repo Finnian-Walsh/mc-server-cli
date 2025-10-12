@@ -1,9 +1,6 @@
-use const_format::formatcp;
 use std::{ffi::OsStr, io, process::Command};
 
-pub static REPO_OWNER: &str = "Finnian-Walsh";
-pub static REPO_NAME: &str = "mc-server-cli";
-pub static REPO_URL: &str = formatcp!("https://github.com/{}/{}", REPO_OWNER, REPO_NAME);
+pub static REPO_URL: &str = "https://github.com/Finnian-Walsh/mc-server-cli";
 
 pub fn update_with_git(commit: Option<String>) -> io::Result<()> {
     Command::new("cargo")
