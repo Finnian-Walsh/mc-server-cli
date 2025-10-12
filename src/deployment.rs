@@ -2,6 +2,7 @@ use crate::{
     config,
     error::{Error, Result},
     session,
+    server::save_last_used,
     template::is_template,
 };
 use std::{
@@ -62,5 +63,7 @@ pub fn restart() -> Result<()> {
     let Some(server) = session_name.strip_suffix(session::SUFFIX) else {
         return Err(Error::InvalidServerSession(session_name));
     };
+
+    save_last_used(server)?;
     session::write_line(&session_name, get_command(server)?)
 }
