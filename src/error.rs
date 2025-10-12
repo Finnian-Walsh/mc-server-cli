@@ -39,6 +39,9 @@ pub enum Error {
     #[error("Invalid servers directory")]
     InvalidServersDirectory,
 
+    #[error("Timestamp file ({0}) is invalid")]
+    InvalidTimestampFile(String),
+
     #[error(transparent)]
     Io(#[from] io::Error),
 
@@ -71,6 +74,9 @@ pub enum Error {
 
     #[error("Server {0} already exists")]
     ServerAlreadyExists(String),
+
+    #[error("The machine's local time went backwards")]
+    TimeWentBackwards,
 
     #[error("Server {0} was not found")]
     ServerNotFound(String),
