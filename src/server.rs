@@ -193,8 +193,6 @@ pub fn get_last_used(server: impl AsRef<Path>) -> Result<Option<String>> {
         .join(LAST_USED_FILE);
 
     if !timestamp_path.exists() {
-        println!("File does not exist");
-        println!("{timestamp_path:?}");
         return Ok(None);
     }
 
