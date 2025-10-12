@@ -4,7 +4,7 @@ use crate::{
 };
 use std::{ffi::OsStr, process::Command};
 
-pub fn run<S: AsRef<OsStr>>(server: &String, commands: Vec<S>) -> Result<()> {
+pub fn run(server: &String, commands: Vec<impl AsRef<OsStr>>) -> Result<()> {
     let config = config::get()?;
     let mcrcon_config = &config.mcrcon;
 
