@@ -9,10 +9,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-fn get_server_dir(server: &str) -> Result<PathBuf> {
-    let server_dir = config::get_expanded_servers_dir()?
-        .join(server)
-        .join("Server");
+fn get_server_dir_required(server: &str) -> Result<PathBuf> {
+    let server_dir = config::get_expanded_servers_dir()?.join(server);
 
     if !server_dir.is_dir() {
         return Err(Error::MissingDirectory { dir: server_dir });
@@ -42,7 +40,7 @@ pub fn get_command(server: &str) -> Result<String> {
         return Err(Error::TemplateDeployed);
     }
 
-    let server_dir = get_server_dir(server)?;
+    let server_dir = get_server_dir_required(server)?;
     let config = &config::get()?;
     Ok(format!(
         "{} action rename-tab Server && cd {} && java -jar {} {} {} && {} kill-session $ZELLIJ_SESSION_NAME",
