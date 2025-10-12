@@ -88,17 +88,17 @@ pub fn tag_servers(servers: &mut [String]) -> Result<()> {
     Ok(())
 }
 
-pub fn attach(session: impl AsRef<OsStr> + for<'a> PartialEq<&'a str>) -> Result<()> {
+pub fn attach(server: &str) -> Result<()> {
     let mut child = Command::new(BASE_COMMAND)
         .arg("attach")
-        .arg(session)
+        .arg(get_name(server))
         .stderr(Stdio::piped())
         .spawn()?;
 
     let status = child.wait()?;
 
     if status.success() {
-        Ok(())
+        save_last_used(server)
     } else {
         let mut buf = Vec::new();
         child
@@ -148,9 +148,10 @@ pub fn new_server(
     server: impl Display + AsRef<Path>,
     initial_command: Option<impl AsRef<OsStr>>,
 ) -> Result<()> {
+    save_last_used(&server)?;
     let session_name = get_name(&server);
     new_session(session_name, initial_command)?;
-    save_last_used(server)
+    save_last_used(&server)
 }
 
 fn session_write(
