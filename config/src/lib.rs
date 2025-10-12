@@ -1,4 +1,3 @@
-use cfg_if::cfg_if;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use serde::{Deserialize, Serialize};
@@ -9,32 +8,33 @@ use std::{
     sync::OnceLock,
 };
 
-cfg_if! {
-    if #[cfg(config_generated)] {
-        mod generated_cfg;
+#[cfg(config_generated)]
+mod generated_cfg;
 
-        pub use generated_cfg::STATIC_CONFIG;
-        pub use generated_cfg::get_default_dynamic_config;
-    } else {
-        pub const STATIC_CONFIG: StaticConfig = StaticConfig {
-            contact: "none",
-            dynamic_config_path: "~/.config/mcserver",
-        };
+#[cfg(config_generated)]
+pub use generated_cfg::STATIC_CONFIG;
 
-        static DEFAULT_DYNAMIC_CONFIG: OnceLock<DynamicConfig> = OnceLock::new();
+#[cfg(config_generated)]
+pub use generated_cfg::get_default_dynamic_config;
 
-        pub fn get_default_dynamic_config() -> &'static DynamicConfig {
-            DEFAULT_DYNAMIC_CONFIG.get_or_init(|| {
-                DynamicConfig {
-                    default_java_args: String::from(""),
-                    nogui: false,
-                    servers_directory: String::from("~/Servers"),
-                    default_server: String::from(""),
-                    mcrcon: HashMap::new(),
-                }
-            })
-        }
-    }
+#[cfg(not(config_generated))]
+pub const STATIC_CONFIG: StaticConfig = StaticConfig {
+    contact: "none",
+    dynamic_config_path: "~/.config/mcserver",
+};
+
+#[cfg(not(config_generated))]
+static DEFAULT_DYNAMIC_CONFIG: OnceLock<DynamicConfig> = OnceLock::new();
+
+#[cfg(not(config_generated))]
+pub fn get_default_dynamic_config() -> &'static DynamicConfig {
+    DEFAULT_DYNAMIC_CONFIG.get_or_init(|| DynamicConfig {
+        default_java_args: String::from(""),
+        nogui: false,
+        servers_directory: String::from("~/Servers"),
+        default_server: String::from(""),
+        mcrcon: HashMap::new(),
+    })
 }
 
 pub trait AllowedConfigValue {}
