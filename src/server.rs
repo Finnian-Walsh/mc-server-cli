@@ -222,9 +222,7 @@ pub fn get_last_used(server: impl AsRef<Path>) -> Result<Option<String>> {
     let seconds = difference % 60;
 
     if hours > 0 {
-        Ok(Some(format!(
-            "{hours}h {minutes}m {seconds}s"
-        )))
+        Ok(Some(format!("{hours}h {minutes}m {seconds}s")))
     } else if minutes > 0 {
         Ok(Some(format!("{minutes}m {seconds}s")))
     } else {
