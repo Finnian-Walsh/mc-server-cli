@@ -9,11 +9,12 @@ use std::{
     env,
     fs::{self, File},
     io::{self, Write},
-    path::{Path, PathBuf},
+    path::Path,
+    time::{SystemTime, UNIX_EPOCH},
 };
 use url::Url;
 
-fn copy_jar<J: io::Read>(server_dir: PathBuf, file_name: String, mut jar: J) -> Result<()> {
+fn copy_jar(server_dir: impl AsRef<Path>, file_name: String, mut jar: impl io::Read) -> Result<()> {
     env::set_current_dir(server_dir)?;
 
     let mut jar_file = File::create(&file_name)?;
@@ -41,7 +42,7 @@ pub fn copy_directory(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Resul
     Ok(())
 }
 
-pub fn remove_dir_with_retries<P: AsRef<Path>>(dir: P) -> Result<()> {
+pub fn remove_dir_with_retries(dir: impl AsRef<Path>) -> Result<()> {
     const ATTEMPTS: u8 = 10;
 
     for i in 1..=ATTEMPTS {
@@ -120,12 +121,12 @@ pub fn init(download_url: Url, platform: Platform, name: Option<String>) -> Resu
     let name = name.unwrap_or_else(|| format!("{:?}-server", platform).to_lowercase());
     let servers_dir = &get_expanded_servers_dir()?;
 
-    let mut server_root_dir = servers_dir.join(&name);
+    let mut server_dir = servers_dir.join(&name);
 
-    if server_root_dir.exists() {
+    if server_dir.exists() {
         let mut number = 2;
 
-        server_root_dir = loop {
+        server_dir = loop {
             let dir = servers_dir.join(format!("{}-{}", &name, number));
 
             if !dir.exists() {
@@ -135,7 +136,6 @@ pub fn init(download_url: Url, platform: Platform, name: Option<String>) -> Resu
         }
     }
 
-    let server_dir = server_root_dir.join("Server");
     fs::create_dir_all(&server_dir)?;
 
     println!("Downloading from {}...", download_url);
@@ -151,15 +151,15 @@ pub fn init(download_url: Url, platform: Platform, name: Option<String>) -> Resu
         .unwrap_or("unknown.jar")
         .to_string();
 
-    if let Err(err) = copy_jar(server_dir, file_name, response) {
-        remove_dir_with_retries(server_root_dir)?;
+    if let Err(err) = copy_jar(&server_dir, file_name, response) {
+        remove_dir_with_retries(server_dir)?;
         return Err(err);
     }
 
     Ok(())
 }
 
-pub fn for_each<F: FnMut(String)>(mut f: F) -> Result<()> {
+pub fn for_each(mut f: impl FnMut(String)) -> Result<()> {
     let servers_dir = get_expanded_servers_dir()?;
 
     if !servers_dir.exists() || !servers_dir.is_dir() {
@@ -183,4 +183,70 @@ pub fn get_all_hashed() -> Result<HashSet<String>> {
         servers.insert(s);
     })?;
     Ok(servers)
+}
+
+static LAST_USED_FILE: &str = "last_used.timestamp";
+
+pub fn get_last_used(server: impl AsRef<Path>) -> Result<Option<String>> {
+    let timestamp_path = get_expanded_servers_dir()?
+        .join(&server)
+        .join(LAST_USED_FILE);
+
+    if !timestamp_path.exists() {
+        println!("File does not exist");
+        println!("{timestamp_path:?}");
+        return Ok(None);
+    }
+
+    let data = fs::read(timestamp_path)?;
+
+    if data.len() != 8 {
+        return Err(Error::InvalidTimestampFile(
+            server.as_ref().to_string_lossy().to_string(),
+        ));
+    }
+
+    let bytes: [u8; 8] = data
+        .try_into()
+        .map_err(|_| Error::InvalidTimestampFile(server.as_ref().to_string_lossy().to_string()))?;
+
+    let timestamp = u64::from_le_bytes(bytes);
+
+    let now_ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| Error::TimeWentBackwards)?
+        .as_secs();
+
+    let difference = now_ts.saturating_sub(timestamp);
+
+    let hours = difference / 3600;
+    let minutes = (difference % 3600) / 60;
+    let seconds = difference % 60;
+
+    if hours > 0 {
+        Ok(Some(format!(
+            "{hours}h {minutes}m {seconds}s"
+        )))
+    } else if minutes > 0 {
+        Ok(Some(format!("{minutes}m {seconds}s")))
+    } else {
+        Ok(Some(format!("{seconds}s")))
+    }
+}
+
+pub fn save_last_used(server: impl AsRef<Path>) -> Result<()> {
+    let now = SystemTime::now();
+
+    let timestamp = now
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| Error::TimeWentBackwards)?
+        .as_secs();
+
+    let timestamp_path = get_expanded_servers_dir()?
+        .join(&server)
+        .join(LAST_USED_FILE);
+    let mut file = File::create(timestamp_path)?;
+    file.write_all(&timestamp.to_le_bytes())?;
+
+    Ok(())
 }
