@@ -8,7 +8,10 @@ use std::{
 };
 
 #[cfg(feature = "generate_config")]
-include!("generated_cfg.rs");
+mod generated_cfg;
+
+#[cfg(feature = "generate_config")]
+pub use generated_cfg::*;
 
 pub trait AllowedConfigValue {}
 impl AllowedConfigValue for String {}
@@ -115,11 +118,10 @@ impl ToTokens for DynamicConfig {
         });
 
         tokens.extend(quote! {
-            use std::sync::OnceLock;
-
-            pub static DEFAULT_DYNAMIC_CONFIG: OnceLock<DynamicConfig> = OnceLock::new();
+            pub static DEFAULT_DYNAMIC_CONFIG: std::sync::OnceLock<DynamicConfig> = std::sync::OnceLock::new();
 
             pub fn get_default_dynamic_config() -> &'static DynamicConfig {
+                use std::collections::HashMap;
                 DEFAULT_DYNAMIC_CONFIG.get_or_init(||
                     DynamicConfig {
                         default_java_args: String::from(#default_java_args),
