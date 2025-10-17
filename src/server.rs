@@ -217,11 +217,22 @@ pub fn get_last_used(server: impl AsRef<Path>) -> Result<Option<String>> {
 
     let difference = now_ts.saturating_sub(timestamp);
 
-    let hours = difference / 3600;
-    let minutes = (difference % 3600) / 60;
-    let seconds = difference % 60;
+    const SECS_MINUTE: u64 = 60;
+    const SECS_HOUR: u64 = SECS_MINUTE * 60;
+    const SECS_DAY: u64 = SECS_HOUR * 24;
 
-    if hours > 0 {
+    let days = difference / SECS_DAY;
+    let days_remainder = difference % SECS_DAY;
+
+    let hours = days_remainder / SECS_HOUR;
+    let hours_remainder = days_remainder % SECS_HOUR;
+    
+    let minutes = hours_remainder / SECS_MINUTE;
+    let seconds = hours_remainder % SECS_MINUTE;
+
+    if days > 0 {
+        Ok(Some(format!("{days}d {hours}h {minutes}m {seconds}s")))
+    } else if hours > 0 {
         Ok(Some(format!("{hours}h {minutes}m {seconds}s")))
     } else if minutes > 0 {
         Ok(Some(format!("{minutes}m {seconds}s")))
