@@ -2,12 +2,10 @@ use color_eyre::eyre::{Result, WrapErr};
 use config::{DynamicConfig, StaticConfig};
 use quote::quote;
 use serde::Deserialize;
-use shellexpand;
 use std::{
     env, fs,
     path::{Path, PathBuf},
 };
-use toml;
 
 #[derive(Debug, Deserialize)]
 struct Config {
@@ -52,7 +50,8 @@ fn main() -> Result<()> {
         }
 
         let config: Config = toml::from_str(
-            &fs::read_to_string(config_template_path).wrap_err("Failed to read configuration file")?,
+            &fs::read_to_string(config_template_path)
+                .wrap_err("Failed to read configuration file")?,
         )
         .wrap_err("Failed to parse configuration file")?;
 
@@ -60,20 +59,21 @@ fn main() -> Result<()> {
         let default_dynamic_config = config.default_dynamic_config;
 
         let tokens = quote! {
+            use super::*;
             pub const STATIC_CONFIG: StaticConfig = #static_config;
-
             #default_dynamic_config
         };
 
         fs::write(cfg_generation_file, tokens.to_string())?;
 
         let expanded_dynamic_config_dir = shellexpand::full(&static_config.dynamic_config_path)?;
-        let dynamic_config_template_path = Path::new(&*expanded_dynamic_config_dir).join("config.toml");
+        let dynamic_config_template_path =
+            Path::new(&*expanded_dynamic_config_dir).join("config.toml");
 
         if dynamic_config_template_path.exists() {
             if !dynamic_config_template_path.is_file() {
-                println!(
-                    "cargo:warning=[build-script-out] There is something at the path where the dynamic configuration is supposed to exist; this will cause problems in the future"
+                build_log!(
+                    "There is something at the path where the dynamic configuration is supposed to exist; this will cause problems in the future"
                 );
             } else {
                 build_log!("Dynamic configuration found");
