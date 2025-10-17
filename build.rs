@@ -25,24 +25,23 @@ macro_rules! build_log {
 fn main() -> Result<()> {
     build_log!("Build script running...");
     color_eyre::install()?;
+    println!("cargo:rerun-if-changed=");
 
     let cargo_manifest_dir = PathBuf::new().join(env::var("CARGO_MANIFEST_DIR")?);
     let cfg_generation_file = &cargo_manifest_dir
         .join("config")
         .join("src")
         .join("generated_cfg.rs");
-    println!("cargo:rerun-if-changed={}", cfg_generation_file.display());
 
-    let config_path = cargo_manifest_dir.join("config.toml");
-    println!("cargo:rerun-if-changed={}", config_path.display());
+    let config_template_path = cargo_manifest_dir.join("config_template.toml");
 
-    if config_path.exists() {
-        build_log!("Configuration path exists ({config_path:?})");
+    if config_template_path.exists() {
+        build_log!("Configuration path exists ({config_template_path:?})");
 
-        if !config_path.is_file() {
+        if !config_template_path.is_file() {
             build_log!(
                 "Static configuration ({}) should be a file - the default static configuration will be used",
-                config_path
+                config_template_path
                     .components()
                     .next_back()
                     .map(|c| format!("{:?}", c))
@@ -53,7 +52,7 @@ fn main() -> Result<()> {
         }
 
         let config: Config = toml::from_str(
-            &fs::read_to_string(config_path).wrap_err("Failed to read configuration file")?,
+            &fs::read_to_string(config_template_path).wrap_err("Failed to read configuration file")?,
         )
         .wrap_err("Failed to parse configuration file")?;
 
@@ -61,7 +60,6 @@ fn main() -> Result<()> {
         let default_dynamic_config = config.default_dynamic_config;
 
         let tokens = quote! {
-            use super::{StaticConfig, DynamicConfig};
             pub const STATIC_CONFIG: StaticConfig = #static_config;
 
             #default_dynamic_config
@@ -70,10 +68,10 @@ fn main() -> Result<()> {
         fs::write(cfg_generation_file, tokens.to_string())?;
 
         let expanded_dynamic_config_dir = shellexpand::full(&static_config.dynamic_config_path)?;
-        let dynamic_config_path = Path::new(&*expanded_dynamic_config_dir).join("config.toml");
+        let dynamic_config_template_path = Path::new(&*expanded_dynamic_config_dir).join("config.toml");
 
-        if dynamic_config_path.exists() {
-            if !dynamic_config_path.is_file() {
+        if dynamic_config_template_path.exists() {
+            if !dynamic_config_template_path.is_file() {
                 println!(
                     "cargo:warning=[build-script-out] There is something at the path where the dynamic configuration is supposed to exist; this will cause problems in the future"
                 );
@@ -83,14 +81,14 @@ fn main() -> Result<()> {
         } else {
             fs::create_dir_all(&*expanded_dynamic_config_dir)?;
             fs::write(
-                &dynamic_config_path,
+                &dynamic_config_template_path,
                 toml::to_string(&default_dynamic_config)
                     .wrap_err("Failed to serialize dynamic configuration")?,
             )
             .wrap_err_with(|| {
                 format!(
                     "Failed to write to the dynamic configuration path ({:?})",
-                    &dynamic_config_path
+                    &dynamic_config_template_path
                 )
             })?;
         }
@@ -98,7 +96,7 @@ fn main() -> Result<()> {
         println!("cargo:rustc-cfg=config_generated");
         build_log!("Configuration has been generated");
     } else {
-        build_log!("Config path ({config_path:?}) does not exist");
+        build_log!("Config path ({config_template_path:?}) does not exist");
     }
 
     Ok(())

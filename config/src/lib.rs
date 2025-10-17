@@ -5,37 +5,10 @@ use std::{
     collections::HashMap,
     ffi::OsStr,
     fmt::{self, Debug, Formatter},
-    sync::OnceLock,
 };
 
-#[cfg(config_generated)]
-mod generated_cfg;
-
-#[cfg(config_generated)]
-pub use generated_cfg::STATIC_CONFIG;
-
-#[cfg(config_generated)]
-pub use generated_cfg::get_default_dynamic_config;
-
-#[cfg(not(config_generated))]
-pub const STATIC_CONFIG: StaticConfig = StaticConfig {
-    contact: "none",
-    dynamic_config_path: "~/.config/mcserver",
-};
-
-#[cfg(not(config_generated))]
-static DEFAULT_DYNAMIC_CONFIG: OnceLock<DynamicConfig> = OnceLock::new();
-
-#[cfg(not(config_generated))]
-pub fn get_default_dynamic_config() -> &'static DynamicConfig {
-    DEFAULT_DYNAMIC_CONFIG.get_or_init(|| DynamicConfig {
-        default_java_args: String::from(""),
-        nogui: false,
-        servers_directory: String::from("~/Servers"),
-        default_server: String::from(""),
-        mcrcon: HashMap::new(),
-    })
-}
+#[cfg(feature = "generate_config")]
+include!("generated_cfg.rs");
 
 pub trait AllowedConfigValue {}
 impl AllowedConfigValue for String {}
@@ -107,7 +80,7 @@ impl ToTokens for McrconConfig {
         };
 
         let password = match self.password.as_ref() {
-            Some(password) => quote! { Some(String::from(#password)) },
+            Some(password) => quote! { Some(Password(String::from(#password))) },
             None => quote! { None },
         };
 
@@ -115,7 +88,7 @@ impl ToTokens for McrconConfig {
             McrconConfig {
                 server_address: #server_address,
                 port: #port,
-                password: String::from(#password),
+                password: #password,
             }
         })
     }
@@ -138,11 +111,11 @@ impl ToTokens for DynamicConfig {
         let default_server = &self.default_server;
 
         let key_value_pairs = self.mcrcon.iter().map(|(k, v)| {
-            quote! { (#k, #v )}
+            quote! { ( String::from(#k), #v )}
         });
 
         tokens.extend(quote! {
-            use std::collections::HashMap;
+            use std::sync::OnceLock;
 
             pub static DEFAULT_DYNAMIC_CONFIG: OnceLock<DynamicConfig> = OnceLock::new();
 
