@@ -30,7 +30,7 @@ fn get_current_version() -> Result<String> {
 }
 
 pub fn get(version: Option<String>) -> Result<String> {
-    let version = version.map_or_else(get_current_version, |ver| Ok(ver))?;
+    let version = version.map_or_else(get_current_version, Ok)?;
     let version_url = format!("{}/{}", BASE_API_URL, version);
     let version_info: VersionInfo = blocking::get(&version_url)?.json()?;
 

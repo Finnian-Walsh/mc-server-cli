@@ -43,7 +43,7 @@ pub fn get(version: Option<String>) -> Result<String> {
             let mut versions = project_info.versions;
             Ok::<_, Error>(versions.pop().unwrap())
         },
-        |version| Ok(version),
+        Ok,
     )?;
 
     let builds: Vec<Build> = client

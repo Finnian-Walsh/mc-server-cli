@@ -18,7 +18,7 @@ struct Entry {
 }
 
 fn first_stable(entries: Vec<Entry>) -> Option<Entry> {
-    entries.into_iter().find(|entry| entry.stable == true)
+    entries.into_iter().find(|entry| entry.stable)
 }
 
 pub fn get(game_version: Option<String>) -> Result<String> {
@@ -30,7 +30,7 @@ pub fn get(game_version: Option<String>) -> Result<String> {
                 .ok_or_else(|| Error::PlatformsNotFound(String::from("stable game version")))?;
             Ok::<_, Error>(entry.version)
         },
-        |game| Ok(game),
+        Ok,
     )?;
     let loader_version = first_stable(versions.loader)
         .ok_or_else(|| Error::PlatformsNotFound(String::from("stable loader")))?
