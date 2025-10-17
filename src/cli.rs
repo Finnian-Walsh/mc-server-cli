@@ -3,7 +3,7 @@ use clap::{ArgGroup, Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser)]
-#[command(name = "server", version, about = "Server CLI tool")]
+#[command(name = "mcserver", version, about = "Minecraft server CLI tool")]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
