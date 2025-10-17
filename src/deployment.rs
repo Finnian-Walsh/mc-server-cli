@@ -1,8 +1,8 @@
 use crate::{
     config,
     error::{Error, Result},
-    session,
     server::save_last_used,
+    session,
     template::is_template,
 };
 use std::{
