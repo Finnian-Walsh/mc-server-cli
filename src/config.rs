@@ -19,7 +19,7 @@ impl AutoConfig {
         }
     }
 
-    pub fn ensure_written(&self) -> Result<()> {
+    pub fn write(&self) -> Result<()> {
         let Some(mutex) = self.get() else {
             return Ok(());
         };

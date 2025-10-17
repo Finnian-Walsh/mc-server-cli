@@ -95,12 +95,12 @@ fn main() -> Result<()> {
             } else if git {
                 repo::update_with_git(commit).wrap_err("Failed to update package with git repo")?;
             } else {
-                unreachable!("Clap ensures git or some is provided");
+                unreachable!("Clap ensures git or a path is provided");
             }
         }
     };
 
-    config::CONFIG.ensure_written()?;
+    config::CONFIG.write()?;
 
     Ok(())
 }
