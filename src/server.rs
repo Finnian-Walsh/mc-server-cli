@@ -226,7 +226,7 @@ pub fn get_last_used(server: impl AsRef<Path>) -> Result<Option<String>> {
 
     let hours = days_remainder / SECS_HOUR;
     let hours_remainder = days_remainder % SECS_HOUR;
-    
+
     let minutes = hours_remainder / SECS_MINUTE;
     let seconds = hours_remainder % SECS_MINUTE;
 
