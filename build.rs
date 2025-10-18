@@ -59,7 +59,6 @@ fn main() -> Result<()> {
         let default_dynamic_config = config.default_dynamic_config;
 
         let tokens = quote! {
-            use super::*;
             pub const STATIC_CONFIG: StaticConfig = #static_config;
             #default_dynamic_config
         };
@@ -93,7 +92,6 @@ fn main() -> Result<()> {
             })?;
         }
 
-        println!("cargo:rustc-cfg=config_generated");
         build_log!("Configuration has been generated");
     } else {
         build_log!("Config path ({config_template_path:?}) does not exist");
