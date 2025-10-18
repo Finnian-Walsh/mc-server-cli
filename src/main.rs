@@ -20,7 +20,7 @@ fn main() -> Result<()> {
     let args = Cli::parse();
 
     match args.command {
-        Commands::Attach { server } => session::attach(&handle_server_arg!(server))
+        Commands::Attach { server } => session::attach(&handle_server_arg!(server)?)
             .wrap_err("Failed to attach to session session")?,
         Commands::Config { config_type } => match config_type {
             ConfigType::Static => println!("{:#?}", config::get_static()),
@@ -31,11 +31,11 @@ fn main() -> Result<()> {
             DefaultCommands::Set { server } => config::get()?.default_server = server,
         },
         Commands::Deploy { server } => {
-            let server = handle_server_arg!(server);
+            let server = handle_server_arg!(server)?;
             session::new_server(&server, Some(&deployment::get_command(&server)?))?;
         }
         Commands::Execute { server, commands } => {
-            let session_name = session::get_name(handle_server_arg!(server));
+            let session_name = session::get_name(handle_server_arg!(server)?);
             for command in commands {
                 session::write_line(&session_name, command)?;
             }
@@ -55,8 +55,10 @@ fn main() -> Result<()> {
 
             println!("{}", servers.join("\n"));
         }
-        Commands::Mcrcon { server, commands } => mcrcon::run(&handle_server_arg!(server), commands)
-            .wrap_err("Failed to run mcrcon command")?,
+        Commands::Mcrcon { server, commands } => {
+            mcrcon::run(&handle_server_arg!(server)?, commands)
+                .wrap_err("Failed to run mcrcon command")?
+        }
         Commands::New {
             platform,
             version,
@@ -76,7 +78,7 @@ fn main() -> Result<()> {
         .wrap_err("Failed to remove server")?,
         Commands::Restart => deployment::restart().wrap_err("Failed to restart server")?,
         Commands::Stop { server } => {
-            let server = handle_server_arg!(server);
+            let server = handle_server_arg!(server)?;
             mcrcon::run(&server, vec!["stop"])
                 .wrap_err_with(|| format!("Failed to stop server {}", &server))?;
         }

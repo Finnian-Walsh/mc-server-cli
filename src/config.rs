@@ -9,13 +9,15 @@ use std::{
 
 pub struct AutoConfig {
     // type ValueType = OnceLock<Mutex<DynamicConfig>>;
-    value: <Self as Deref>::Target,
+    value: OnceLock<Mutex<DynamicConfig>>,
+    initial_value: OnceLock<DynamicConfig>,
 }
 
 impl AutoConfig {
     const fn new() -> Self {
         Self {
             value: OnceLock::new(),
+            initial_value: OnceLock::new(),
         }
     }
 
@@ -24,10 +26,19 @@ impl AutoConfig {
             return Ok(());
         };
 
-        fs::create_dir_all(get_config_directory()?)?;
         let guard = mutex
             .lock()
             .map_err(|_| Error::GlobalMutexPoisoned(GlobalMutex::Config))?;
+
+        if let Some(initial_value) = self.initial_value.get() {
+            if *initial_value == *guard {
+                return Ok(());
+            }
+        } else {
+            eprintln!("Initial configuration value not set");
+        }
+
+        fs::create_dir_all(get_config_directory()?)?;
         fs::write(get_config_file()?, toml::to_string(&*guard)?)?;
         Ok(())
     }
@@ -92,6 +103,8 @@ pub fn get() -> Result<MutexGuard<'static, DynamicConfig>> {
         config.clone()
     };
 
+    CONFIG.initial_value.get_or_init(|| config.clone());
+
     CONFIG
         .get_or_init(|| Mutex::new(config))
         .lock()
@@ -132,20 +145,22 @@ pub fn get_current_server_directory() -> Result<String> {
 
 #[macro_export]
 macro_rules! handle_server_arg {
-    ($server:expr) => {{
-        use $crate::config::{get, get_current_server_directory};
+    ($server:expr) => {
+        (|| {
+            use $crate::config::{get, get_current_server_directory};
 
-        let server = $server
-            .map_or_else::<Result<String>, _, _>(
-                || Ok(get()?.default_server.clone()),
-                |val| Ok(val),
-            )
-            .wrap_err("Failed to get configuration")?;
+            let server = $server
+                .map_or_else::<Result<String>, _, _>(
+                    || Ok(get()?.default_server.clone()),
+                    |val| Ok(val),
+                )
+                .wrap_err("Failed to get configuration")?;
 
-        if server == "." {
-            get_current_server_directory().wrap_err("Failed to get current server directory")?
-        } else {
-            server
-        }
-    }};
+            if server == "." {
+                get_current_server_directory().wrap_err("Failed to get current server directory")
+            } else {
+                Ok(server)
+            }
+        })()
+    };
 }

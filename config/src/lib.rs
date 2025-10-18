@@ -7,11 +7,8 @@ use std::{
     fmt::{self, Debug, Formatter},
 };
 
-#[cfg(feature = "generate_config")]
-mod generated_cfg;
-
-#[cfg(feature = "generate_config")]
-pub use generated_cfg::*;
+#[cfg(feature = "use_generated_config")]
+include!("generated_cfg.rs");
 
 pub trait AllowedConfigValue {}
 impl AllowedConfigValue for String {}
@@ -39,7 +36,7 @@ impl ToTokens for StaticConfig<String> {
     }
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, PartialEq, Serialize)]
 pub struct Password(String);
 
 impl AsRef<OsStr> for Password {
@@ -61,7 +58,7 @@ impl Debug for Password {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct McrconConfig {
     pub server_address: Option<String>,
     pub port: Option<u16>,
@@ -97,7 +94,7 @@ impl ToTokens for McrconConfig {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct DynamicConfig {
     pub default_java_args: String,
     pub nogui: bool,
