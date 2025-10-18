@@ -48,7 +48,7 @@ pub enum Commands {
     },
 
     #[command(about = "Interact with a server, using the minecraft remote console")]
-    Mcrcon {
+    Rcon {
         server: Option<String>,
 
         commands: Vec<String>,

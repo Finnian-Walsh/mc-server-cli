@@ -59,13 +59,13 @@ impl Debug for Password {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct McrconConfig {
+pub struct RconConfig {
     pub server_address: Option<String>,
     pub port: Option<u16>,
     pub password: Option<Password>,
 }
 
-impl ToTokens for McrconConfig {
+impl ToTokens for RconConfig {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let server_address = match self.server_address.as_ref() {
             Some(server_address) => quote! {
@@ -85,7 +85,7 @@ impl ToTokens for McrconConfig {
         };
 
         tokens.extend(quote! {
-            McrconConfig {
+            RconConfig {
                 server_address: #server_address,
                 port: #port,
                 password: #password,
@@ -100,7 +100,7 @@ pub struct DynamicConfig {
     pub nogui: bool,
     pub servers_directory: String,
     pub default_server: String,
-    pub mcrcon: HashMap<String, McrconConfig>,
+    pub rcon: HashMap<String, RconConfig>,
 }
 
 impl ToTokens for DynamicConfig {
@@ -110,7 +110,7 @@ impl ToTokens for DynamicConfig {
         let servers_directory = &self.servers_directory;
         let default_server = &self.default_server;
 
-        let key_value_pairs = self.mcrcon.iter().map(|(k, v)| {
+        let key_value_pairs = self.rcon.iter().map(|(k, v)| {
             quote! { ( String::from(#k), #v )}
         });
 
@@ -125,7 +125,7 @@ impl ToTokens for DynamicConfig {
                         nogui: #nogui,
                         servers_directory: String::from(#servers_directory),
                         default_server: String::from(#default_server),
-                        mcrcon: HashMap::from([
+                        rcon: HashMap::from([
                             #(#key_value_pairs),*
                         ]),
                     }

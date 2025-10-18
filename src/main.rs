@@ -2,7 +2,7 @@ mod cli;
 mod config;
 mod deployment;
 mod error;
-mod mcrcon;
+mod rcon;
 mod platforms;
 mod repo;
 mod reqwest_client;
@@ -55,9 +55,9 @@ fn main() -> Result<()> {
 
             println!("{}", servers.join("\n"));
         }
-        Commands::Mcrcon { server, commands } => {
-            mcrcon::run(&handle_server_arg!(server)?, commands)
-                .wrap_err("Failed to run mcrcon command")?
+        Commands::Rcon { server, commands } => {
+            rcon::run(&handle_server_arg!(server)?, commands)
+                .wrap_err("Failed to run rcon command")?
         }
         Commands::New {
             platform,
@@ -79,7 +79,7 @@ fn main() -> Result<()> {
         Commands::Restart => deployment::restart().wrap_err("Failed to restart server")?,
         Commands::Stop { server } => {
             let server = handle_server_arg!(server)?;
-            mcrcon::run(&server, vec!["stop"])
+            rcon::run(&server, vec!["stop"])
                 .wrap_err_with(|| format!("Failed to stop server {}", &server))?;
         }
         Commands::Template { action } => match action {

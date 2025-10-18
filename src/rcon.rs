@@ -6,25 +6,25 @@ use std::{ffi::OsStr, process::Command};
 
 pub fn run(server: &String, commands: Vec<impl AsRef<OsStr>>) -> Result<()> {
     let config = config::get()?;
-    let mcrcon_config = &config.mcrcon;
+    let rcon_config = &config.rcon;
 
-    let server_mcrcon_config = mcrcon_config
+    let server_rcon_config = rcon_config
         .get(server)
-        .ok_or_else(|| Error::MissingMcrconConfig(String::from(server)))?;
+        .ok_or_else(|| Error::MissingRconConfig(String::from(server)))?;
 
     let mut command = Command::new("mcrcon");
 
-    if let Some(server_address) = &server_mcrcon_config.server_address {
+    if let Some(server_address) = &server_rcon_config.server_address {
         command.arg("-H");
         command.arg(server_address);
     }
 
-    if let Some(port) = &server_mcrcon_config.port {
+    if let Some(port) = &server_rcon_config.port {
         command.arg("-P");
         command.arg(port.to_string());
     }
 
-    if let Some(password) = &server_mcrcon_config.password {
+    if let Some(password) = &server_rcon_config.password {
         command.arg("-p");
         command.arg(password);
     }

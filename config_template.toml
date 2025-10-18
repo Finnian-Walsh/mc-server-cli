@@ -19,12 +19,12 @@ servers_directory = "~/Servers"
 # The default server to be deployed or stopped when the cli is used
 default_server = "my-server"
 
-# Mcrcon configuration for each server
-[default_dynamic_config.mcrcon]
+# Rcon configuration for each server
+[default_dynamic_config.rcon]
 my-server = { server_address = "localhost", port = 25575, password = "abc" }
 
 # Equally, you can do mcron.<server> and customize each field line by line
-[default_dynamic_config.mcron.my-second-server]
+[default_dynamic_config.rcon.my-second-server]
 server_address = "localhost"
 port = 25575
 password = "abc"

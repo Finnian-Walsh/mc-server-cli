@@ -63,8 +63,8 @@ pub enum Error {
     #[error("Mutex {0} is poisoned")]
     GlobalMutexPoisoned(GlobalMutex),
 
-    #[error("Mcrcon config is missing for server: {0}")]
-    MissingMcrconConfig(String),
+    #[error("Rcon config is missing for server: {0}")]
+    MissingRconConfig(String),
 
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
