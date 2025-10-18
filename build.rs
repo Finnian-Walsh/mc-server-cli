@@ -25,7 +25,7 @@ fn main() -> Result<()> {
     color_eyre::install()?;
     println!("cargo:rerun-if-changed=");
 
-    let cargo_manifest_dir = PathBuf::new().join(env::var("CARGO_MANIFEST_DIR")?);
+    let cargo_manifest_dir = PathBuf::new().join(env::var("OUT_DIR")?);
     let cfg_generation_file = &cargo_manifest_dir
         .join("config")
         .join("src")
