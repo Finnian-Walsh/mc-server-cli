@@ -109,15 +109,18 @@ pub enum Commands {
     #[command(visible_alias = "up", about = "Update the server binary",
         group(
                 ArgGroup::new("source")
+                    .args(&["git", "path", "from_crate"])
                     .required(true)
-                    .args(&["git", "path"])
             )
     )]
     Update {
+        #[arg(short = 'c', long = "crate")]
+        from_crate: bool,
+
         #[arg(short, long)]
         git: bool,
 
-        #[arg(short, long)]
+        #[arg(long, requires = "git")]
         commit: Option<String>,
 
         #[arg(short, long)]

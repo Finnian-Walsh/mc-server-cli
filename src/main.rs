@@ -4,11 +4,11 @@ mod deployment;
 mod error;
 mod platforms;
 mod rcon;
-mod repo;
 mod reqwest_client;
 mod server;
 mod session;
 mod template;
+mod update;
 
 use clap::Parser;
 use cli::*;
@@ -113,14 +113,21 @@ fn main() -> Result<()> {
                     .wrap_err_with(|| format!("Failed to use template {template}"))?
             }
         },
-        Commands::Update { git, commit, path } => {
+        Commands::Update {
+            git,
+            commit,
+            path,
+            from_crate,
+        } => {
             if let Some(path) = path {
-                repo::update_with_path(&path)
-                    .wrap_err(format!("Failed to update package with {}", path.display()))?;
+                update::with_path(&path)
+                    .wrap_err(format!("Failed to update package with {}", path.display()))?
             } else if git {
-                repo::update_with_git(commit).wrap_err("Failed to update package with git repo")?;
+                update::with_git(commit).wrap_err("Failed to update package with git repo")?
+            } else if from_crate {
+                update::with_crate().wrap_err("Failed to update package with crate")?
             } else {
-                unreachable!("Clap ensures git or a path is provided");
+                unreachable!("Clap ensures git or a path is provided")
             }
         }
     };
