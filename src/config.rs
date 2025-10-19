@@ -1,11 +1,18 @@
 use crate::error::{Error, GlobalMutex, Result};
-use config::{DynamicConfig, STATIC_CONFIG, StaticConfig, get_default_dynamic_config};
 use std::{
     env, fs,
     ops::Deref,
     path::{Path, PathBuf},
     sync::{Mutex, MutexGuard, OnceLock},
 };
+
+mod config_defs {
+    include!("../config_defs.rs");
+}
+
+use config_defs::{DynamicConfig, StaticConfig, Password, RconConfig};
+
+include!(concat!(env!("OUT_DIR"), "/generated_cfg.rs"));
 
 pub struct AutoConfig {
     // type ValueType = OnceLock<Mutex<DynamicConfig>>;

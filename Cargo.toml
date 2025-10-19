@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.46", features = ["derive"] }
-config = { path = "config", features = [ "use_generated_config" ] }
 dirs = "6.0.0"
 reqwest = { version = "0.12.23", features = ["blocking", "json"] }
 url = "2.5.7"
@@ -17,12 +16,16 @@ thiserror = "2.0.16"
 serde_json = "1.0.145"
 
 [build-dependencies]
-config = { path = "config" }
 quote = "1.0.40"
 serde = { version = "1.0.219", features = ["derive"] }
 toml = "0.9.5"
 shellexpand = "3.1.1"
 color-eyre = "0.6.5"
+thiserror = "2.0.16"
+proc-macro2 = "1.0.101"
 
 [features]
 build-logging = []
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(disable_tokenization)'] }

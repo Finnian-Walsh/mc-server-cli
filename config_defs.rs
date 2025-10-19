@@ -1,14 +1,15 @@
+#[cfg(not(disable_tokenization))]
 use proc_macro2::TokenStream;
+
+#[cfg(not(disable_tokenization))]
 use quote::{ToTokens, quote};
+
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     ffi::OsStr,
     fmt::{self, Debug, Formatter},
 };
-
-#[cfg(feature = "use_generated_config")]
-include!("generated_cfg.rs");
 
 pub trait AllowedConfigValue {}
 impl AllowedConfigValue for String {}
@@ -23,6 +24,7 @@ where
     pub dynamic_config_path: T,
 }
 
+#[cfg(not(disable_tokenization))]
 impl ToTokens for StaticConfig<String> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let contact = &self.contact;
@@ -37,7 +39,7 @@ impl ToTokens for StaticConfig<String> {
 }
 
 #[derive(Clone, Deserialize, PartialEq, Serialize)]
-pub struct Password(String);
+pub struct Password(pub String);
 
 impl AsRef<OsStr> for Password {
     fn as_ref(&self) -> &OsStr {
@@ -45,6 +47,7 @@ impl AsRef<OsStr> for Password {
     }
 }
 
+#[cfg(not(disable_tokenization))]
 impl ToTokens for Password {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let password = &self.0;
@@ -65,6 +68,7 @@ pub struct RconConfig {
     pub password: Option<Password>,
 }
 
+#[cfg(not(disable_tokenization))]
 impl ToTokens for RconConfig {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let server_address = match self.server_address.as_ref() {
@@ -103,6 +107,7 @@ pub struct DynamicConfig {
     pub rcon: HashMap<String, RconConfig>,
 }
 
+#[cfg(not(disable_tokenization))]
 impl ToTokens for DynamicConfig {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let default_java_args = &self.default_java_args;

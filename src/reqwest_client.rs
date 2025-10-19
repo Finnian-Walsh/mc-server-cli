@@ -1,5 +1,4 @@
-use crate::error::Result;
-use config::STATIC_CONFIG;
+use crate::{config::STATIC_CONFIG, error::Result};
 use reqwest::{
     blocking::Client,
     header::{HeaderMap, HeaderValue, USER_AGENT},
