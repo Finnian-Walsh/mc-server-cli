@@ -10,7 +10,7 @@ mod config_defs {
     include!("../config_defs.rs");
 }
 
-use config_defs::{DynamicConfig, StaticConfig, Password, RconConfig};
+use config_defs::{DynamicConfig, Password, RconConfig, StaticConfig};
 
 include!(concat!(env!("OUT_DIR"), "/generated_cfg.rs"));
 
@@ -150,17 +150,18 @@ pub fn get_current_server_directory() -> Result<String> {
     Ok(server)
 }
 
+pub fn get_default_server() -> Result<String> {
+    Ok(get()?.default_server.clone())
+}
+
 #[macro_export]
 macro_rules! handle_server_arg {
     ($server:expr) => {
         (|| {
-            use $crate::config::{get, get_current_server_directory};
+            use $crate::config::{get_current_server_directory, get_default_server};
 
             let server = $server
-                .map_or_else::<Result<String>, _, _>(
-                    || Ok(get()?.default_server.clone()),
-                    |val| Ok(val),
-                )
+                .map_or_else(get_default_server, |val| Ok(val))
                 .wrap_err("Failed to get configuration")?;
 
             if server == "." {
