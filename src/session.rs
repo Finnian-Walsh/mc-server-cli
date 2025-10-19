@@ -4,7 +4,7 @@ use crate::{
     session,
 };
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     ffi::OsStr,
     fmt::Display,
     io::{self, Read, Write},
@@ -53,15 +53,14 @@ fn session_info_to_server(session_info: &str) -> Option<String> {
         None => return None, // unexpected error
     };
 
-    session_name
-        .strip_suffix(session::SUFFIX)
-        .map(|s| s.to_string())
+    session_name.strip_suffix(session::SUFFIX).map(String::from)
 }
 
 fn get_alive_server_sessions() -> Result<HashSet<String>> {
     Ok(get_server_sessions_string()?
-        .map(|ss| {
-            ss.lines()
+        .map(|server_sessions| {
+            server_sessions
+                .lines()
                 .filter(session_is_alive)
                 .filter_map(session_info_to_server)
                 .collect()
@@ -71,10 +70,24 @@ fn get_alive_server_sessions() -> Result<HashSet<String>> {
 
 fn get_dead_server_sessions() -> Result<HashSet<String>> {
     Ok(get_server_sessions_string()?
-        .map(|ss| {
-            ss.lines()
+        .map(|server_sessions| {
+            server_sessions
+                .lines()
                 .filter(session_has_exited)
                 .filter_map(session_info_to_server)
+                .collect()
+        })
+        .unwrap_or_default())
+}
+
+fn get_server_sessions_to_living() -> Result<HashMap<String, bool>> {
+    Ok(get_server_sessions_string()?
+        .map(|ss| {
+            ss.lines()
+                .map(|s| (s, session_is_alive(&s)))
+                .filter_map(|(session, living)| {
+                    session_info_to_server(session).map(|server| (server, living))
+                })
                 .collect()
         })
         .unwrap_or_default())
@@ -117,20 +130,18 @@ pub fn retain_dead_servers(servers: &mut Vec<ServerObject>) -> Result<()> {
 }
 
 pub fn tag_servers(servers: &mut [ServerObject]) -> Result<()> {
-    let alive_sessions = get_alive_server_sessions()?;
-    let dead_sessions = get_dead_server_sessions()?;
+    let mapped_sessions = get_server_sessions_to_living()?;
 
-    servers.iter_mut().for_each(|server| {
-        if alive_sessions.contains(&server.name) {
-            tag_as_active(server);
-        } else {
-            add_last_used_tag(server);
-
-            if dead_sessions.contains(&server.name) {
+    servers
+        .iter_mut()
+        .for_each(|server| match mapped_sessions.get(&server.name) {
+            Some(true) => tag_as_active(server),
+            Some(false) => {
+                add_last_used_tag(server);
                 tag_as_dead(server);
             }
-        }
-    });
+            None => add_last_used_tag(server),
+        });
     Ok(())
 }
 
