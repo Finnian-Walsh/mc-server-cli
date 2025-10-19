@@ -143,7 +143,7 @@ fn main() -> Result<()> {
             build_log!("Dynamic configuration found");
         }
     } else {
-        fs::create_dir_all(&*expanded_dynamic_config_dir)?;
+        fs::create_dir_all(expanded_dynamic_config_dir.to_string())?;
         fs::write(
             &dynamic_config_template_path,
             toml::to_string(&default_dynamic_config)
