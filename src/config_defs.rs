@@ -120,21 +120,14 @@ impl ToTokens for DynamicConfig {
         });
 
         tokens.extend(quote! {
-            pub static DEFAULT_DYNAMIC_CONFIG: std::sync::OnceLock<DynamicConfig> = std::sync::OnceLock::new();
-
-            pub fn get_default_dynamic_config() -> &'static DynamicConfig {
-                use std::collections::HashMap;
-                DEFAULT_DYNAMIC_CONFIG.get_or_init(||
-                    DynamicConfig {
-                        default_java_args: String::from(#default_java_args),
-                        nogui: #nogui,
-                        servers_directory: String::from(#servers_directory),
-                        default_server: String::from(#default_server),
-                        rcon: HashMap::from([
-                            #(#key_value_pairs),*
-                        ]),
-                    }
-                )
+            DynamicConfig {
+                default_java_args: String::from(#default_java_args),
+                nogui: #nogui,
+                servers_directory: String::from(#servers_directory),
+                default_server: String::from(#default_server),
+                rcon: std::collections::HashMap::from([
+                    #(#key_value_pairs),*
+                ]),
             }
         });
     }

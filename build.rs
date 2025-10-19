@@ -8,8 +8,9 @@ use std::{
 use thiserror::Error;
 
 mod config_defs {
-    include!("config_defs.rs");
+    include!("src/config_defs.rs");
 }
+
 use config_defs::{DynamicConfig, StaticConfig};
 
 #[derive(Debug, Error)]
@@ -119,7 +120,13 @@ fn main() -> Result<()> {
 
     let tokens = quote! {
         pub const STATIC_CONFIG: StaticConfig = #static_config;
-        #default_dynamic_config
+        pub static DEFAULT_DYNAMIC_CONFIG: std::sync::OnceLock<DynamicConfig> = std::sync::OnceLock::new();
+
+        pub fn get_default_dynamic_config() -> &'static DynamicConfig {
+            DEFAULT_DYNAMIC_CONFIG.get_or_init(||
+                #default_dynamic_config
+            )
+        }
     };
 
     fs::write(cfg_generation_file, tokens.to_string())?;

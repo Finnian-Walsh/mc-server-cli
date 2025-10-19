@@ -7,7 +7,7 @@ use std::{
 };
 
 mod config_defs {
-    include!("../config_defs.rs");
+    include!("config_defs.rs");
 }
 
 use config_defs::{DynamicConfig, Password, RconConfig, StaticConfig};
