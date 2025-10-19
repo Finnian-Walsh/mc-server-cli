@@ -5,6 +5,7 @@ use crate::{
 };
 use reqwest::{blocking, header};
 use std::{
+    cell::OnceCell,
     collections::HashSet,
     env,
     fmt::{self, Display, Formatter},
@@ -140,7 +141,10 @@ pub fn remove_servers_with_confirmation(servers: Vec<String>) -> Result<()> {
 }
 
 pub fn init(download_url: Url, platform: Platform, name: Option<String>) -> Result<()> {
-    let name = name.unwrap_or_else(|| format!("{:?}-server", platform).to_lowercase());
+    let fallback_name: OnceCell<String> = OnceCell::new();
+    let get_fallback_name = || fallback_name.get_or_init(|| format!("{platform:?}").to_lowercase());
+
+    let name = name.unwrap_or_else(|| format!("{:?}-server", get_fallback_name()));
     let servers_dir = &get_expanded_servers_dir()?;
 
     let mut server_dir = servers_dir.join(&name);
@@ -170,8 +174,8 @@ pub fn init(download_url: Url, platform: Platform, name: Option<String>) -> Resu
         .transpose()?
         .and_then(|cd| cd.split("filename=\"").nth(1))
         .and_then(|slice| slice.split('"').next())
-        .unwrap_or("unknown.jar")
-        .to_string();
+        .map(String::from)
+        .unwrap_or_else(|| format!("{}.jar", get_fallback_name()));
 
     if let Err(err) = copy_jar(&server_dir, file_name, response) {
         remove_dir_with_retries(server_dir)?;
