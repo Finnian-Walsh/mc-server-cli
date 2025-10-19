@@ -242,9 +242,13 @@ pub fn get_last_used(server: impl AsRef<Path>) -> Result<Option<String>> {
     const SECS_MINUTE: u64 = 60;
     const SECS_HOUR: u64 = SECS_MINUTE * 60;
     const SECS_DAY: u64 = SECS_HOUR * 24;
+    const SECS_YEAR: u64 = (SECS_DAY as f64 * 365.2425) as u64;
 
-    let days = difference / SECS_DAY;
-    let days_remainder = difference % SECS_DAY;
+    let years = difference / SECS_YEAR;
+    let years_remainder = difference % SECS_YEAR;
+
+    let days = years_remainder / SECS_DAY;
+    let days_remainder = years_remainder % SECS_DAY;
 
     let hours = days_remainder / SECS_HOUR;
     let hours_remainder = days_remainder % SECS_HOUR;
@@ -252,7 +256,11 @@ pub fn get_last_used(server: impl AsRef<Path>) -> Result<Option<String>> {
     let minutes = hours_remainder / SECS_MINUTE;
     let seconds = hours_remainder % SECS_MINUTE;
 
-    if days > 0 {
+    if years > 0 {
+        Ok(Some(format!(
+            "{years}y {days}d {hours}h {minutes}m {seconds}s"
+        )))
+    } else if days > 0 {
         Ok(Some(format!("{days}d {hours}h {minutes}m {seconds}s")))
     } else if hours > 0 {
         Ok(Some(format!("{hours}h {minutes}m {seconds}s")))
