@@ -20,7 +20,7 @@ fn main() -> Result<()> {
     let args = Cli::parse();
 
     match args.command {
-        Commands::Attach { server } => session::attach(&handle_server_arg!(server)?)
+        Commands::Attach { server } => session::attach(&unwrap_server_with_fallback!(server)?)
             .wrap_err("Failed to attach to session session")?,
         Commands::Config { config_type } => match config_type {
             ConfigType::Static => println!("{:#?}", config::get_static()),
@@ -37,15 +37,15 @@ fn main() -> Result<()> {
         }
         .wrap_err("Failed to delete all sessions")?,
         Commands::DeleteSession { session } => {
-            session::delete_server_session(handle_server_arg!(session)?)
+            session::delete_server_session(unwrap_server_with_fallback!(session)?)
                 .wrap_err("Failed to delete session")?
         }
         Commands::Deploy { server } => {
-            let server = handle_server_arg!(server)?;
+            let server = unwrap_server_with_fallback!(server)?;
             session::new_server(&server, Some(&deployment::get_command(&server)?))?;
         }
         Commands::Execute { server, commands } => {
-            let session_name = session::get_name(handle_server_arg!(server)?);
+            let session_name = session::get_name(unwrap_server_with_fallback!(server)?);
             for command in commands {
                 session::write_line(&session_name, command)?;
             }
@@ -80,8 +80,10 @@ fn main() -> Result<()> {
                 println!("{server}");
             }
         }
-        Commands::Rcon { server, commands } => rcon::run(&handle_server_arg!(server)?, commands)
-            .wrap_err("Failed to run rcon command")?,
+        Commands::Rcon { server, commands } => {
+            rcon::run(&unwrap_server_with_fallback!(server)?, commands)
+                .wrap_err("Failed to run rcon command")?
+        }
         Commands::New {
             platform,
             version,
@@ -101,7 +103,7 @@ fn main() -> Result<()> {
         .wrap_err("Failed to remove server")?,
         Commands::Restart => deployment::restart().wrap_err("Failed to restart server")?,
         Commands::Stop { server } => {
-            let server = handle_server_arg!(server)?;
+            let server = unwrap_server_with_fallback!(server)?;
             rcon::run(&server, vec!["stop"])
                 .wrap_err_with(|| format!("Failed to stop server {}", &server))?;
         }

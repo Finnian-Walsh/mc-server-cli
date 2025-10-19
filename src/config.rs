@@ -15,7 +15,6 @@ use config_defs::{DynamicConfig, Password, RconConfig, StaticConfig};
 include!(concat!(env!("OUT_DIR"), "/generated_cfg.rs"));
 
 pub struct AutoConfig {
-    // type ValueType = OnceLock<Mutex<DynamicConfig>>;
     value: OnceLock<Mutex<DynamicConfig>>,
     initial_value: OnceLock<DynamicConfig>,
 }
@@ -155,7 +154,7 @@ pub fn get_default_server() -> Result<String> {
 }
 
 #[macro_export]
-macro_rules! handle_server_arg {
+macro_rules! unwrap_server_with_fallback {
     ($server:expr) => {
         (|| {
             use $crate::config::{get_current_server_directory, get_default_server};
