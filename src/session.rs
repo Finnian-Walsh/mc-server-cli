@@ -1,13 +1,13 @@
 use crate::{
     error::{Error, Result},
-    server::{get_last_used, save_last_used},
+    server::{ServerObject, get_last_used, save_last_used},
     session,
 };
 use std::{
     collections::HashSet,
     ffi::OsStr,
     fmt::Display,
-    io::{self, Read},
+    io::{self, Read, Write},
     path::Path,
     process::{Command, Stdio},
     thread,
@@ -21,32 +21,12 @@ pub fn get_name(server: impl Display) -> String {
     format!("{server}{SUFFIX}")
 }
 
-fn get_alive_server_sessions() -> Result<HashSet<String>> {
+fn get_server_sessions_string() -> Result<Option<String>> {
     let output = Command::new(BASE_COMMAND).arg("list-sessions").output()?;
 
     match output.status.code() {
-        Some(0) => Ok(String::from_utf8_lossy(&output.stdout)
-            .to_string()
-            .lines()
-            .filter(|line| {
-                let bracket_pos = match line.rfind('(') {
-                    Some(pos) => pos,
-                    None => return true,
-                };
-
-                !line[bracket_pos..].contains("EXITED") // if there is no "EXITED", still alive
-            })
-            .map(|line| {
-                match line.rfind("[Created") {
-                    Some(pos) => &line[7..=pos - 5],
-                    None => &line[7..], // unexpected error
-                }
-                .to_string()
-            })
-            .filter(|session| session.ends_with(session::SUFFIX))
-            .map(|session| session[..session.len() - session::SUFFIX.len()].to_string())
-            .collect()),
-        Some(1) => Ok(HashSet::new()), // no sessions
+        Some(0) => Ok(Some(String::from_utf8_lossy(&output.stdout).to_string())),
+        Some(1) => Ok(None), // no sessions
         _ => Err(Error::CommandFailure {
             code: output.status.code(),
             stderr: Some(output.stderr),
@@ -54,37 +34,115 @@ fn get_alive_server_sessions() -> Result<HashSet<String>> {
     }
 }
 
-fn push_last_used(server: &mut String) {
-    let last_used = get_last_used(&server);
+fn session_has_exited(session_line: &&str) -> bool {
+    let bracket_pos = match session_line.rfind('(') {
+        Some(pos) => pos,
+        None => return false,
+    };
 
-    server.push_str(" (Last used \x1b[35;1m");
-    server.push_str(last_used.unwrap_or(None).as_deref().unwrap_or("unknown"));
-    server.push_str("\x1b[0m ago)");
+    session_line[bracket_pos..].contains("EXITED") // if there is no "EXITED", still alive
 }
 
-pub fn retain_active(servers: &mut Vec<String>) -> Result<()> {
+fn session_is_alive(session_line: &&str) -> bool {
+    !session_has_exited(session_line)
+}
+
+fn session_info_to_server(session_info: &str) -> Option<String> {
+    let session_name = match session_info.rfind("[Created") {
+        Some(pos) => &session_info[7..=pos - 5],
+        None => return None, // unexpected error
+    };
+
+    session_name
+        .strip_suffix(session::SUFFIX)
+        .map(|s| s.to_string())
+}
+
+fn get_alive_server_sessions() -> Result<HashSet<String>> {
+    Ok(get_server_sessions_string()?
+        .map(|ss| {
+            ss.lines()
+                .filter(session_is_alive)
+                .filter_map(session_info_to_server)
+                .collect()
+        })
+        .unwrap_or_default())
+}
+
+fn get_dead_server_sessions() -> Result<HashSet<String>> {
+    Ok(get_server_sessions_string()?
+        .map(|ss| {
+            ss.lines()
+                .filter(session_has_exited)
+                .filter_map(session_info_to_server)
+                .collect()
+        })
+        .unwrap_or_default())
+}
+
+fn add_last_used_tag(server: &mut ServerObject) {
+    let last_used = get_last_used(&server.name);
+
+    server.tags.push(format!(
+        "(Last used \x1b[35;1m{}\x1b[0m ago)",
+        last_used.unwrap_or(None).as_deref().unwrap_or("unknown")
+    ))
+}
+
+fn tag_as_active(server: &mut ServerObject) {
+    server.tags.push("(\x1b[32;1mactive\x1b[0m)".to_string());
+}
+
+fn tag_as_dead(server: &mut ServerObject) {
+    server.tags.push("(\x1b[31;1mdead\x1b[0m)".to_string())
+}
+
+pub fn retain_active_servers(servers: &mut Vec<ServerObject>) -> Result<()> {
     let sessions = get_alive_server_sessions()?;
-    servers.retain(|server| sessions.contains(server));
+    servers.retain(|server| sessions.contains(&server.name));
     Ok(())
 }
 
-pub fn retain_inactive(servers: &mut Vec<String>) -> Result<()> {
+pub fn retain_inactive_servers(servers: &mut Vec<ServerObject>) -> Result<()> {
     let sessions = get_alive_server_sessions()?;
-    servers.retain(|server| !sessions.contains(server));
-    servers.iter_mut().for_each(push_last_used);
+    servers.retain(|server| !sessions.contains(&server.name));
+    servers.iter_mut().for_each(add_last_used_tag);
     Ok(())
 }
 
-pub fn tag_servers(servers: &mut [String]) -> Result<()> {
+pub fn retain_dead_servers(servers: &mut Vec<ServerObject>) -> Result<()> {
+    let dead_sessions = get_dead_server_sessions()?;
+    servers.retain(|server| dead_sessions.contains(&server.name));
+    Ok(())
+}
+
+pub fn tag_servers(servers: &mut [ServerObject]) -> Result<()> {
+    let alive_sessions = get_alive_server_sessions()?;
+    let dead_sessions = get_dead_server_sessions()?;
+
+    servers.iter_mut().for_each(|server| {
+        if alive_sessions.contains(&server.name) {
+            tag_as_active(server);
+        } else {
+            add_last_used_tag(server);
+
+            if dead_sessions.contains(&server.name) {
+                tag_as_dead(server);
+            }
+        }
+    });
+    Ok(())
+}
+
+pub fn tag_dead_servers(servers: &mut [ServerObject]) -> Result<()> {
     let sessions = get_alive_server_sessions()?;
 
     servers.iter_mut().for_each(|server| {
-        if sessions.contains(server) {
-            server.push_str(" (\x1b[32;1mactive\x1b[0m)");
-        } else {
-            push_last_used(server);
+        if sessions.contains(&server.name) {
+            tag_as_dead(server);
         }
     });
+
     Ok(())
 }
 
@@ -159,6 +217,35 @@ pub fn delete_server_session(server: impl Display) -> Result<()> {
         .arg("delete-session")
         .arg(format!("{server}{SUFFIX}"))
         .status()?;
+    Ok(())
+}
+
+pub fn delete_all() -> Result<()> {
+    for session in get_dead_server_sessions()? {
+        delete_server_session(session)?;
+    }
+
+    Ok(())
+}
+
+pub fn delete_all_confirmed() -> Result<()> {
+    loop {
+        print!("Delete all sessions? (y/n): ");
+        io::stdout().flush()?;
+
+        let mut confirmation = String::new();
+        io::stdin().read_line(&mut confirmation)?;
+
+        match confirmation.trim_end().to_lowercase().as_str() {
+            "y" | "yes" => break delete_all()?,
+            "n" | "no" => {
+                println!("Operation canceled");
+                break;
+            }
+            _ => {}
+        };
+    }
+
     Ok(())
 }
 

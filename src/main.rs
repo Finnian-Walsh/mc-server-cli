@@ -30,6 +30,12 @@ fn main() -> Result<()> {
             DefaultCommands::Get => println!("{}", config::get()?.default_server),
             DefaultCommands::Set { server } => config::get()?.default_server = server,
         },
+        Commands::DeleteAllSessions { force } => if force {
+            session::delete_all()
+        } else {
+            session::delete_all_confirmed()
+        }
+        .wrap_err("Failed to delete all sessions")?,
         Commands::DeleteSession { session } => {
             session::delete_server_session(handle_server_arg!(session)?)
                 .wrap_err("Failed to delete session")?
@@ -44,20 +50,35 @@ fn main() -> Result<()> {
                 session::write_line(&session_name, command)?;
             }
         }
-        Commands::List { active, inactive } => {
+        Commands::List {
+            active,
+            inactive,
+            dead,
+        } => {
             let mut servers = vec![];
-            server::for_each(|s| servers.push(s)).wrap_err("Failed to get servers")?;
+            server::for_each(|s| servers.push(server::ServerObject::new(s)))
+                .wrap_err("Failed to get servers")?;
 
             if active {
-                session::retain_active(&mut servers).wrap_err("Failed to retain active servers")?;
+                session::retain_active_servers(&mut servers)
+                    .wrap_err("Failed to retain active servers")?;
             } else if inactive {
-                session::retain_inactive(&mut servers)
+                session::retain_inactive_servers(&mut servers)
                     .wrap_err("Failed to retain inactive servers")?;
+                if dead {
+                    session::tag_dead_servers(&mut servers)
+                        .wrap_err("Failed to tag dead servers")?;
+                }
+            } else if dead {
+                session::retain_dead_servers(&mut servers)
+                    .wrap_err("Failed to retain dead servers")?;
             } else {
                 session::tag_servers(&mut servers).wrap_err("Failed to tag active servers")?;
             }
 
-            println!("{}", servers.join("\n"));
+            for server in servers {
+                println!("{server}");
+            }
         }
         Commands::Rcon { server, commands } => rcon::run(&handle_server_arg!(server)?, commands)
             .wrap_err("Failed to run rcon command")?,

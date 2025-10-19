@@ -27,9 +27,19 @@ pub enum Commands {
     },
 
     #[command(
+        subcommand = "delete-all-sessions",
+        visible_alias = "da",
+        about = "Safely delete all server dead server sessions"
+    )]
+    DeleteAllSessions {
+        #[arg(short, long)]
+        force: bool,
+    },
+
+    #[command(
         subcommand = "delete-session",
         visible_alias = "d",
-        about = "Safely delete the session for a server"
+        about = "Safely delete the session for a server (must be dead)"
     )]
     DeleteSession { session: Option<String> },
 
@@ -47,11 +57,14 @@ pub enum Commands {
 
     #[command(visible_alias = "ls", about = "List all, active or inactive servers")]
     List {
-        #[arg(short, long, conflicts_with = "inactive")]
+        #[arg(short, long, conflicts_with_all = ["inactive", "dead"])]
         active: bool,
 
         #[arg(short, long, conflicts_with = "active")]
         inactive: bool,
+
+        #[arg(short, long, conflicts_with = "inactive")]
+        dead: bool,
     },
 
     #[command(about = "Interact with a server, using the minecraft remote console")]
