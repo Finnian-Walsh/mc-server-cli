@@ -26,9 +26,9 @@ pub fn get(game_version: Option<String>) -> Result<String> {
 
     let game_version = game_version.map_or_else(
         || {
-            let entry = first_stable(versions.game)
-                .ok_or_else(|| Error::PlatformsNotFound(String::from("stable game version")))?;
-            Ok::<_, Error>(entry.version)
+            first_stable(versions.game)
+                .map(|e| e.version)
+                .ok_or_else(|| Error::PlatformsNotFound(String::from("stable game version")))
         },
         Ok,
     )?;
