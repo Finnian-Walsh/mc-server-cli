@@ -21,7 +21,7 @@ pub fn get_name(server: impl Display) -> String {
     format!("{server}{SUFFIX}")
 }
 
-fn get_server_sessions_string() -> Result<Option<String>> {
+fn get_server_sessions_raw_string() -> Result<Option<String>> {
     let output = Command::new(BASE_COMMAND).arg("list-sessions").output()?;
 
     match output.status.code() {
@@ -57,7 +57,7 @@ fn session_info_to_server(session_info: &str) -> Option<String> {
 }
 
 fn get_alive_server_sessions() -> Result<HashSet<String>> {
-    Ok(get_server_sessions_string()?
+    Ok(get_server_sessions_raw_string()?
         .map(|server_sessions| {
             server_sessions
                 .lines()
@@ -69,7 +69,7 @@ fn get_alive_server_sessions() -> Result<HashSet<String>> {
 }
 
 fn get_dead_server_sessions() -> Result<HashSet<String>> {
-    Ok(get_server_sessions_string()?
+    Ok(get_server_sessions_raw_string()?
         .map(|server_sessions| {
             server_sessions
                 .lines()
@@ -81,7 +81,7 @@ fn get_dead_server_sessions() -> Result<HashSet<String>> {
 }
 
 fn get_server_sessions_to_living() -> Result<HashMap<String, bool>> {
-    Ok(get_server_sessions_string()?
+    Ok(get_server_sessions_raw_string()?
         .map(|ss| {
             ss.lines()
                 .map(|s| (s, session_is_alive(&s)))
