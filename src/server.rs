@@ -7,12 +7,34 @@ use reqwest::{blocking, header};
 use std::{
     collections::HashSet,
     env,
+    fmt::{self, Display, Formatter},
     fs::{self, File},
     io::{self, Write},
     path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
 use url::Url;
+
+pub struct ServerObject {
+    pub name: String,
+    pub tags: Vec<String>,
+}
+
+impl ServerObject {
+    pub fn new(name: String) -> Self {
+        ServerObject { name, tags: vec![] }
+    }
+}
+
+impl Display for ServerObject {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name)?;
+        for tag in &self.tags {
+            write!(f, " {tag}")?;
+        }
+        Ok(())
+    }
+}
 
 fn copy_jar(server_dir: impl AsRef<Path>, file_name: String, mut jar: impl io::Read) -> Result<()> {
     env::set_current_dir(server_dir)?;
