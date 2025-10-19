@@ -31,12 +31,12 @@ fn get_current_version() -> Result<String> {
 
 pub fn get(version: Option<String>) -> Result<String> {
     let version = version.map_or_else(get_current_version, Ok)?;
-    let version_url = format!("{}/{}", BASE_API_URL, version);
+    let version_url = format!("{BASE_API_URL}/{version}");
     let version_info: VersionInfo = blocking::get(&version_url)?.json()?;
 
     let latest = version_info.builds.latest;
-    println!("Creating purpur server (v{}, build {})", version, latest);
+    println!("Creating purpur server (v{version}, build {latest})");
 
-    let download_url = format!("{}/{}/download", version_url, latest);
+    let download_url = format!("{version_url}/{latest}/download");
     Ok(download_url)
 }

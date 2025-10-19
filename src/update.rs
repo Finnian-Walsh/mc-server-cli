@@ -7,7 +7,7 @@ pub fn with_git(commit: Option<String>) -> io::Result<()> {
         .arg("install")
         .arg("--git")
         .arg(if let Some(commit) = commit {
-            format!("{}/commit/{}", REPO_URL, commit)
+            format!("{REPO_URL}/commit/{commit}")
         } else {
             REPO_URL.to_string()
         })

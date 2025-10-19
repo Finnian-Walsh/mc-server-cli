@@ -44,7 +44,7 @@ fn copy_jar(server_dir: impl AsRef<Path>, file_name: String, mut jar: impl io::R
     io::copy(&mut jar, &mut jar_file)?;
 
     let mut jarfile_txt = File::create("jarfile.txt")?;
-    writeln!(jarfile_txt, "{}", file_name)?;
+    writeln!(jarfile_txt, "{file_name}")?;
 
     Ok(())
 }
@@ -115,10 +115,7 @@ pub fn remove_servers_with_confirmation(servers: Vec<String>) -> Result<()> {
         }
 
         if loop {
-            print!(
-                "Enter `{}` to delete the server or nothing to cancel operation: ",
-                server
-            );
+            print!("Enter `{server}` to delete the server or nothing to cancel operation: ");
             io::stdout().flush()?;
 
             let mut response = String::new();
@@ -164,7 +161,7 @@ pub fn init(download_url: Url, platform: Platform, name: Option<String>) -> Resu
 
     fs::create_dir_all(&server_dir)?;
 
-    println!("Downloading from {}...", download_url);
+    println!("Downloading from {download_url}...");
     let response = blocking::get(download_url)?;
 
     let file_name = response

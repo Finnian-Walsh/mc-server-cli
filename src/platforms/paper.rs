@@ -47,15 +47,15 @@ pub fn get(version: Option<String>) -> Result<String> {
     )?;
 
     let builds: Vec<Build> = client
-        .get(format!("{}/versions/{}/builds", BASE_API_URL, version))
+        .get(format!("{BASE_API_URL}/versions/{version}/builds"))
         .send()?
         .json::<BuildsInfo>()?
         .builds;
     let application = &builds[builds.len() - 1].downloads.application;
 
     let download_url = format!(
-        "{}/{}/{}",
-        BASE_DOWNLOAD_URL, application.sha256, application.name
+        "{BASE_DOWNLOAD_URL}/{}/{}",
+        application.sha256, application.name
     );
 
     Ok(download_url)

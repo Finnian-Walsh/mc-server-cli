@@ -40,7 +40,6 @@ pub fn get(game_version: Option<String>) -> Result<String> {
         .version;
 
     Ok(format!(
-        "{}/loader/{}/{}/{}/server/jar",
-        BASE_API_URL, game_version, loader_version, installer_version
+        "{BASE_API_URL}/loader/{game_version}/{loader_version}/{installer_version}/server/jar",
     ))
 }
