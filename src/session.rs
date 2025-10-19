@@ -126,6 +126,7 @@ pub fn retain_inactive_servers(servers: &mut Vec<ServerObject>) -> Result<()> {
 pub fn retain_dead_servers(servers: &mut Vec<ServerObject>) -> Result<()> {
     let dead_sessions = get_dead_server_sessions()?;
     servers.retain(|server| dead_sessions.contains(&server.name));
+    servers.iter_mut().for_each(add_last_used_tag);
     Ok(())
 }
 
