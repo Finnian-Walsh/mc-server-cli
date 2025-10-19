@@ -154,6 +154,14 @@ pub fn new_server(
     save_last_used(&server)
 }
 
+pub fn delete_server_session(server: impl Display) -> Result<()> {
+    Command::new(BASE_COMMAND)
+        .arg("delete-session")
+        .arg(format!("{server}{SUFFIX}"))
+        .status()?;
+    Ok(())
+}
+
 fn session_write(
     session: impl AsRef<OsStr>,
     mode: &'static str,

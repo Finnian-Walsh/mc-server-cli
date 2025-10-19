@@ -26,6 +26,11 @@ pub enum Commands {
         action: DefaultCommands,
     },
 
+    #[command(subcommand = "delete-session", visible_alias = "d", about = "Safely delete the session for a server")]
+    DeleteSession {
+        session: Option<String>,
+    },
+
     #[command(visible_alias = "dpl", about = "Deploy a server")]
     Deploy { server: Option<String> },
 

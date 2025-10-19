@@ -30,6 +30,7 @@ fn main() -> Result<()> {
             DefaultCommands::Get => println!("{}", config::get()?.default_server),
             DefaultCommands::Set { server } => config::get()?.default_server = server,
         },
+        Commands::DeleteSession { session } => session::delete_server_session(handle_server_arg!(session)?).wrap_err("Failed to delete session")?,
         Commands::Deploy { server } => {
             let server = handle_server_arg!(server)?;
             session::new_server(&server, Some(&deployment::get_command(&server)?))?;
