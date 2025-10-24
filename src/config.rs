@@ -1,16 +1,13 @@
-use crate::error::{Error, GlobalMutex, Result};
+use crate::{
+    config_defs::{DynamicConfig, Password, RconConfig, StaticConfig},
+    error::{Error, GlobalMutex, Result},
+};
 use std::{
     env, fs,
     ops::Deref,
     path::{Path, PathBuf},
     sync::{Mutex, MutexGuard, OnceLock},
 };
-
-mod config_defs {
-    include!("config_defs.rs");
-}
-
-use config_defs::{DynamicConfig, Password, RconConfig, StaticConfig};
 
 include!(concat!(env!("OUT_DIR"), "/generated_cfg.rs"));
 

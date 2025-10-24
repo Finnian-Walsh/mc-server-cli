@@ -29,6 +29,3 @@ proc-macro2 = "1.0.101"
 
 [features]
 build-logging = []
-
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(disable_tokenization)'] }

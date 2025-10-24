@@ -1,5 +1,6 @@
 mod cli;
 mod config;
+mod config_defs;
 mod deployment;
 mod error;
 mod platforms;
