@@ -14,8 +14,8 @@ use std::{
     time::Duration,
 };
 
-pub static BASE_COMMAND: &str = "zellij";
-pub static SUFFIX: &str = ".mcserver";
+pub const BASE_COMMAND: &str = "zellij";
+pub const SUFFIX: &str = ".mcserver";
 
 pub fn get_name(server: impl Display) -> String {
     format!("{server}{SUFFIX}")

@@ -208,7 +208,7 @@ pub fn get_all_hashed() -> Result<HashSet<String>> {
     Ok(servers)
 }
 
-static LAST_USED_FILE: &str = "last_used.timestamp";
+const LAST_USED_FILE: &str = "last_used.timestamp";
 
 pub fn get_last_used(server: impl AsRef<Path>) -> Result<Option<String>> {
     let timestamp_path = get_expanded_servers_dir()?

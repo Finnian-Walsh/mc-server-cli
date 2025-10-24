@@ -2,7 +2,7 @@ use crate::error::{Error, Result};
 use reqwest::{self, blocking};
 use serde::Deserialize;
 
-static BASE_API_URL: &str = "https://meta.fabricmc.net/v2/versions";
+const BASE_API_URL: &str = "https://meta.fabricmc.net/v2/versions";
 
 #[derive(Debug, Deserialize)]
 struct Versions {

@@ -4,9 +4,9 @@ use crate::{
 };
 use serde::Deserialize;
 
-static BASE_API_URL: &str = "https://api.papermc.io/v2/projects/paper";
+const BASE_API_URL: &str = "https://api.papermc.io/v2/projects/paper";
 
-static BASE_DOWNLOAD_URL: &str = "https://fill-data.papermc.io/v1/objects";
+const BASE_DOWNLOAD_URL: &str = "https://fill-data.papermc.io/v1/objects";
 
 #[derive(Debug, Deserialize)]
 struct ProjectInfo {

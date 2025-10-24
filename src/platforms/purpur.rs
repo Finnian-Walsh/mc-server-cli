@@ -2,7 +2,7 @@ use crate::error::Result;
 use reqwest::{self, blocking};
 use serde::Deserialize;
 
-static BASE_API_URL: &str = "https://api.purpurmc.org/v2/purpur";
+const BASE_API_URL: &str = "https://api.purpurmc.org/v2/purpur";
 
 #[derive(Debug, Deserialize)]
 struct ProjectInfo {

@@ -5,7 +5,7 @@ use crate::{
 };
 use std::path::{Path, PathBuf};
 
-static TEMPLATE_SUFFIX: &str = ".template";
+const TEMPLATE_SUFFIX: &str = ".template";
 
 pub fn is_template(server: &str) -> bool {
     server.ends_with(TEMPLATE_SUFFIX)
