@@ -224,17 +224,22 @@ pub fn new_server(
     save_last_used(&server)
 }
 
-pub fn delete_server_session(server: impl Display) -> Result<()> {
-    Command::new(BASE_COMMAND)
-        .arg("delete-session")
-        .arg(format!("{server}{SUFFIX}"))
-        .status()?;
+pub fn delete_server_session(server: impl Display, force: bool) -> Result<()> {
+    let mut command = Command::new(BASE_COMMAND);
+    command.arg("delete-session");
+    command.arg(format!("{server}{SUFFIX}"));
+
+    if force {
+        command.arg("--force");
+    }
+
+    command.status()?;
     Ok(())
 }
 
 pub fn delete_all() -> Result<()> {
     for session in get_dead_server_sessions()? {
-        delete_server_session(session)?;
+        delete_server_session(session, false)?;
     }
 
     Ok(())

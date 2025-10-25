@@ -41,7 +41,12 @@ pub enum Commands {
         visible_alias = "d",
         about = "Safely delete the session for a server (must be dead)"
     )]
-    DeleteSession { session: Option<String> },
+    DeleteSession {
+        #[arg(short, long)]
+        force: bool,
+
+        session: Option<String>
+    },
 
     #[command(visible_alias = "dpl", about = "Deploy a server")]
     Deploy { server: Option<String> },
@@ -106,14 +111,14 @@ pub enum Commands {
         action: TemplateCommands,
     },
 
-    #[command(visible_alias = "up", about = "Update the server binary",
+    #[command(visible_alias = "reinst", about = "Reinstall the server binary",
         group(
                 ArgGroup::new("source")
                     .args(&["git", "path", "from_crate"])
                     .required(true)
             )
     )]
-    Update {
+    Reinstall {
         #[arg(short = 'c', long = "crate")]
         from_crate: bool,
 

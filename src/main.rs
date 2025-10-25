@@ -1,11 +1,9 @@
 mod cli;
 mod config;
 mod config_defs;
-mod deployment;
 mod error;
 mod platforms;
 mod rcon;
-mod reqwest_client;
 mod server;
 mod session;
 mod template;
@@ -21,7 +19,7 @@ fn main() -> Result<()> {
     let args = Cli::parse();
 
     match args.command {
-        Commands::Attach { server } => session::attach(&unwrap_server_with_fallback!(server)?)
+        Commands::Attach { server } => session::attach(&unwrap_server_or_default!(server)?)
             .wrap_err("Failed to attach to session session")?,
         Commands::Config { config_type } => match config_type {
             ConfigType::Static => println!("{:#?}", config::get_static()),
@@ -37,16 +35,16 @@ fn main() -> Result<()> {
             session::delete_all_confirmed()
         }
         .wrap_err("Failed to delete all sessions")?,
-        Commands::DeleteSession { session } => {
-            session::delete_server_session(unwrap_server_with_fallback!(session)?)
+        Commands::DeleteSession { session, force } => {
+            session::delete_server_session(unwrap_server_or_default!(session)?, force)
                 .wrap_err("Failed to delete session")?
         }
         Commands::Deploy { server } => {
-            let server = unwrap_server_with_fallback!(server)?;
-            session::new_server(&server, Some(&deployment::get_command(&server)?))?;
+            let server = unwrap_server_or_default!(server)?;
+            session::new_server(&server, Some(&server::get_command(&server)?))?;
         }
         Commands::Execute { server, commands } => {
-            let session_name = session::get_name(unwrap_server_with_fallback!(server)?);
+            let session_name = session::get_name(unwrap_server_or_default!(server)?);
             for command in commands {
                 session::write_line(&session_name, command)?;
             }
@@ -82,7 +80,7 @@ fn main() -> Result<()> {
             }
         }
         Commands::Rcon { server, commands } => {
-            rcon::run(&unwrap_server_with_fallback!(server)?, commands)
+            rcon::run(&unwrap_server_or_default!(server)?, commands)
                 .wrap_err("Failed to run rcon command")?
         }
         Commands::New {
@@ -102,9 +100,9 @@ fn main() -> Result<()> {
             server::remove_servers_with_confirmation(servers)
         }
         .wrap_err("Failed to remove server")?,
-        Commands::Restart => deployment::restart().wrap_err("Failed to restart server")?,
+        Commands::Restart => server::restart().wrap_err("Failed to restart server")?,
         Commands::Stop { server } => {
-            let server = unwrap_server_with_fallback!(server)?;
+            let server = unwrap_server_or_default!(server)?;
             rcon::run(&server, vec!["stop"])
                 .wrap_err_with(|| format!("Failed to stop server {}", &server))?;
         }
@@ -116,7 +114,7 @@ fn main() -> Result<()> {
                     .wrap_err_with(|| format!("Failed to use template {template}"))?
             }
         },
-        Commands::Update {
+        Commands::Reinstall {
             git,
             commit,
             path,

@@ -151,7 +151,7 @@ pub fn get_default_server() -> Result<String> {
 }
 
 #[macro_export]
-macro_rules! unwrap_server_with_fallback {
+macro_rules! unwrap_server_or_default {
     ($server:expr) => {
         (|| {
             use $crate::config::{get_current_server_directory, get_default_server};
